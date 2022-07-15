@@ -1,0 +1,14 @@
+TrainConfig(
+    version: 3,
+    env: (
+        id: "BevySnake",
+    ),
+    net: (
+        relpos_encoding: (
+            extent: [10, 10],
+            position_features: ["x", "y"],
+            value_gate: "relu",
+            per_entity_values: false,
+        ),
+    ),
+)

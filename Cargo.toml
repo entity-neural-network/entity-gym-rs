@@ -1,0 +1,32 @@
+[package]
+name = "entity-gym-rs"
+version = "0.1.0-dev"
+authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "entity_gym_rs"
+
+[dependencies]
+bevy = "0.7.0"
+rand = { version = "0.8.5", features = ["small_rng"] }
+ragged-buffer = "0.3.8"
+pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
+numpy = { version = "0.15", optional = true }
+ndarray = "0.15.0"
+maplit = "1.0.2"
+clap = { version = "3.1.7", features = ["derive"] }
+crossbeam = "0.8.1"
+rustc-hash = "1.0"
+atomicbox = "0.4.0"
+rogue_net = { path = "../rogue-net-rs" }
+
+anyhow = "1.0"
+
+lazy_static = "1.4" 
+
+[features]
+default = ["python"]
+python = ["pyo3", "numpy", "ragged-buffer/python"]
