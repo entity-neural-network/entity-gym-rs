@@ -37,37 +37,45 @@ poetry run python train.py --config=train.ron --checkpoint-dir=checkpoints
 
 ## How it works
 
-To allow the snake game to be played by the AI, we add a `Player` component that wraps an `AnyAgent` object.
+To allow the snake game to be played by the AI, we add a `Player` resource that wraps an `AnyAgent` object.
 
 ```rust
-#[derive(Component)]
 pub struct Player(pub AnyAgent);
 ```
 
 When creating our app, we initialize the agent by loading a neural network from a checkpoint:
 
 ```rust
-        .insert_resource(Player(AnyAgent::rogue_net(
-            "norelattn-1m/latest-step000000999424",
-        )))
+        .insert_non_send_resource(match agent_path {
+            Some(path) => Player(AnyAgent::rogue_net(&path)),
+            None => Player(AnyAgent::random()),
+        })
 ```
 
 The core part of the integration happens inside the `snake_movement_agent` system defined in [`src/ai.rs`]().
 
 ```rust
 pub(crate) fn snake_movement_agent(
-    mut player: ResMut<Player>,
+    mut player: NonSendMut<Player>,
     mut heads: Query<(&mut SnakeHead, &Position)>,
     mut exit: EventWriter<AppExit>,
     segments_res: Res<SnakeSegments>,
-    food: Query<(&Food, &Position)>,
-    segment: Query<(&SnakeSegment, &Position)>,
+    food: Query<(&crate::Food, &Position)>,
+    segment: Query<(&crate::SnakeSegment, &Position)>,
 ) {
     if let Some((mut head, head_pos)) = heads.iter_mut().next() {
         let obs = Obs::new(segments_res.len() as f32)
-            .entities("Food", food.iter().map(|(_, pos)| pos))
-            .entities("Head", [head_pos].into_iter())
-            .entities("SnakeSegment", segment.iter().map(|(_, pos)| pos));
+            .entities(food.iter().map(|(_, &Position { x, y })| Food { x, y }))
+            .entities(
+                [head_pos]
+                    .into_iter()
+                    .map(|&Position { x, y }| Head { x, y }),
+            )
+            .entities(
+                segment
+                    .iter()
+                    .map(|(_, &Position { x, y })| SnakeSegment { x, y }),
+            );
         let action = player.0.act::<Move>(obs);
         match action {
             Some(Move(dir)) => {
@@ -115,6 +123,14 @@ impl Action for Move {
     fn num_actions() -> u64 {
         4
     }
+
+    fn name() -> &'static str {
+        "move"
+    }
+
+    fn labels() -> &'static [&'static str] {
+        &["up", "down", "left", "right"]
+    }
 }
 ```
 
@@ -124,37 +140,46 @@ This could just be done automatically by a derive macro.
 The input to the agent is an `Obs` struct:
 
 ```rust
-Obs::new(segments_res.len() as f32)
-    .entities("Food", food.iter().map(|(_, pos)| pos))
-    .entities("Head", [head_pos].into_iter())
-    .entities("SnakeSegment", segment.iter().map(|(_, pos)| pos));
+let obs = Obs::new(segments_res.len() as f32)
+    .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
+    .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
+    .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
 ```
 
 The argument taken by `Obs::new` is the current "score" achieved by the agent, which is used as the reward signal during training.
 We want the agent to create as long of a snake as possible, so we use the number of segments as the score.
 
 Additionally, we supply the `Obs` with several lists of entities that we want the agent to see.
-The entities must implement the `Featurizable` trait that allows them to be converted into a flat list of floating point numbers (again, this could be done automatically by a derive macro):
+The entities must implement the `Featurizable` trait that allows them to be converted into a flat list of floating point numbers (again, this can be a derive macro):
 
 ```rust
-impl Featurizable for Position {
+pub struct Head {
+    x: i32,
+    y: i32,
+}
+
+impl Featurizable for Head {
     fn num_feats() -> usize {
         2
     }
 
-    fn feature_names() -> Vec<String> {
-        vec!["x".to_string(), "y".to_string()]
+    fn feature_names() -> &'static [&'static str] {
+        &["x", "y"]
     }
 
     fn featurize(&self) -> Vec<f32> {
         vec![self.x as f32, self.y as f32]
+    }
+
+    fn name() -> &'static str {
+        "Head"
     }
 }
 ```
 
 One final detail is that the `act` method may return `None`.
 This happens if we are running in training mode and the framework decides close the environment.
-In this case, we should terminate the application.
+In this case, we should terminate the application  by sending an `AppExit` event.
 
 ## Training
 
@@ -177,14 +202,17 @@ impl Config {
 }
 ```
 
-2. We define the interface for our environment (this must match what the way we construct the `Obs` struct):
+2. We define the interface for our environment. This must match the observation and action types of the agent.
+
+```rust:
 
 ```rust
 fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
     TrainEnvBuilder::default()
-        .entity::<Position>("Head")
-        .entity::<Position>("SnakeSegment")
-        .entity::<Position>("Food")
+        .entity::<ai::Head>()
+        .entity::<ai::SnakeSegment>()
+        .entity::<ai::Food>()
+        .action::<Move>()
         .build()
 }
 ```
@@ -208,3 +236,4 @@ Arc::new(move |seed| {
 - When training, we crate and run many parallel game instances.
   If all of these have the same starting state, they can end up generating identical or highly correlated trajectories which degrades the training.
   For this reason, the `run_headless` method to receives a `seed` (which will be different for each App instance) and use it to randomize the starting.
+- All the PyO3/Python code is gated by a "python" feature flag to work around [https://github.com/PyO3/pyo3/issues/1708]().

@@ -14,17 +14,9 @@ pub(crate) fn snake_movement_agent(
 ) {
     if let Some((mut head, head_pos)) = heads.iter_mut().next() {
         let obs = Obs::new(segments_res.len() as f32)
-            .entities(food.iter().map(|(_, &Position { x, y })| Food { x, y }))
-            .entities(
-                [head_pos]
-                    .into_iter()
-                    .map(|&Position { x, y }| Head { x, y }),
-            )
-            .entities(
-                segment
-                    .iter()
-                    .map(|(_, &Position { x, y })| SnakeSegment { x, y }),
-            );
+            .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
+            .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
+            .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
         let action = player.0.act::<Move>(obs);
         match action {
             Some(Move(dir)) => {
