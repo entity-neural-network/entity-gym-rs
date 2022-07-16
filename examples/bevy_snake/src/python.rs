@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::thread;
 
-use crate::ai;
+use crate::ai::{self, Move};
 use entity_gym_rs::agent::{AnyAgent, TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
 use entity_gym_rs::low_level::VecEnv;
@@ -24,6 +24,7 @@ fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
         .entity::<ai::Head>()
         .entity::<ai::SnakeSegment>()
         .entity::<ai::Food>()
+        .action::<Move>()
         .build()
 }
 

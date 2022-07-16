@@ -39,7 +39,7 @@ pub(crate) fn snake_movement_agent(
 
 pub struct Player(pub AnyAgent);
 
-struct Move(Direction);
+pub struct Move(Direction);
 
 impl Action for Move {
     fn from_u64(index: u64) -> Self {

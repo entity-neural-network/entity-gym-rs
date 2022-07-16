@@ -128,14 +128,14 @@ impl TrainEnvBuilder {
         self
     }
 
-    pub fn action<A: super::Action>(mut self, name: &str) -> Self {
+    pub fn action<A: super::Action>(mut self) -> Self {
         assert!(
-            self.actions.iter().all(|(n, _)| n != name),
+            self.actions.iter().all(|(n, _)| n != A::name()),
             "Already have an action with name \"{}\"",
-            name,
+            A::name(),
         );
         self.actions.push((
-            name.to_string(),
+            A::name().to_string(),
             ActionSpace::Categorical {
                 choices: A::labels().iter().map(|c| c.to_string()).collect(),
             },
