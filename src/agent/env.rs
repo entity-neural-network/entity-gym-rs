@@ -66,9 +66,9 @@ impl Agent for TrainAgent {
         let mut counts = vec![];
         for name in &self.entity_names {
             match obs.entities.get(name.as_str()) {
-                Some((feats, c)) => {
+                Some((feats, count, _)) => {
                     data.extend(feats.iter());
-                    counts.push(*c);
+                    counts.push(*count);
                 }
                 None => {
                     counts.push(0);

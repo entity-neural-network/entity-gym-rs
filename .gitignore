@@ -3,6 +3,7 @@ examples/*/target
 __pycache__
 /wandb
 examples/*/runs
+examples/*/wandb
 /runs
 entity_gym_rs/*.so
 .vscode
