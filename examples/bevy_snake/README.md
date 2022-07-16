@@ -196,8 +196,6 @@ impl Config {
 
 2. We define the interface for our environment. This must match the observation and action types of the agent.
 
-```rust:
-
 ```rust
 fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
     TrainEnvBuilder::default()
