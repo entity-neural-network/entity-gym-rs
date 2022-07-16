@@ -2,7 +2,7 @@ pub mod agent;
 mod examples;
 pub mod low_level;
 
-//#[cfg(feature = "python")]
+#[cfg(feature = "python")]
 mod python {
     use std::sync::Arc;
 
@@ -13,12 +13,18 @@ mod python {
     pub use super::low_level::*;
     use pyo3::prelude::*;
 
-    #[pyfunction]
+    #[pyfunction(
+        board_size = "10",
+        first_env_index = "0",
+        num_snakes = "1",
+        max_snake_length = "10",
+        max_steps = "100"
+    )]
     fn multisnake(
         num_envs: usize,
         threads: usize,
-        initial_seed: u64,
         board_size: usize,
+        first_env_index: u64,
         num_snakes: usize,
         max_snake_length: usize,
         max_steps: usize,
@@ -30,7 +36,7 @@ mod python {
                 }),
                 num_envs,
                 threads,
-                initial_seed,
+                first_env_index,
             ),
         }
     }
