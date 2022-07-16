@@ -5,5 +5,5 @@ __pycache__
 examples/*/runs
 examples/*/wandb
 /runs
-entity_gym_rs/*.so
+python/entity_gym_rs/*.so
 .vscode
