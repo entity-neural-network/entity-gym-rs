@@ -241,6 +241,24 @@ ragged-buffer = ">=0.3.9,<0.4.0"
 tqdm = ">=4.63.1,<5.0.0"
 
 [[package]]
+name = "entity-gym-rs"
+version = "0.1.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.8.0,<3.10"
+develop = true
+
+[package.dependencies]
+entity-gym = "^0.1.5"
+numpy = "^1.22.3"
+ragged-buffer = "^0.3.7"
+
+[package.source]
+type = "directory"
+url = "../.."
+
+[[package]]
 name = "gitdb"
 version = "4.0.9"
 description = "Git Object Database"
@@ -433,11 +451,11 @@ testing = ["pytest"]
 
 [[package]]
 name = "markdown"
-version = "3.3.7"
+version = "3.4.1"
 description = "Python implementation of Markdown."
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 importlib-metadata = {version = ">=4.4", markers = "python_version < \"3.10\""}
@@ -790,7 +808,7 @@ numpy = ">=1.17.3,<1.25.0"
 
 [[package]]
 name = "sentry-sdk"
-version = "1.7.1"
+version = "1.7.2"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -1039,7 +1057,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<3.10"
-content-hash = "4cc9bb23357e2e4e0d60d631fb6125e3071fe7f946a55d2aebe90f2d55cad2b6"
+content-hash = "29766f4bdaf7ff994648b2dc6da788162749af1c961f4c9c2f973916e86a5a81"
 
 [metadata.files]
 absl-py = []
@@ -1062,6 +1080,7 @@ docker-pycreds = []
 docstring-parser = []
 enn-trainer = []
 entity-gym = []
+entity-gym-rs = []
 gitdb = []
 gitpython = []
 google-auth = []
