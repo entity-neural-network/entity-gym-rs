@@ -1,7 +1,7 @@
 # EntityGym for Rust
 
-[EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel _entity-based_ abstraction for reinforcement learning environments, enabling highly ergonomic and efficient training of deep RL agents.
-This package provides an indings that allows Rust programs to implement the entity-gym API.
+[EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel entity-based abstraction for reinforcement learning environments, which enables highly ergonomic and efficient training of deep reinforcement learning agents.
+This crate provides bindings that allows Rust programs to implement the entity-gym API.
 
 ## Background
 
