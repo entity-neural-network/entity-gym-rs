@@ -43,10 +43,10 @@ def train(steps: int):
 The [`low_level` module](src/low_level/) defines an interface that closely mirrors the abstractions in entity-gym.
 
 The `Environment` ([low-level/env.rs](src/low_level/env.rs)) trait defines the main abstraction that needs to be implemented by the user.
-It is similar to the `Environment` trait in the [`entity-gym`](), but somewhat lower-level to allow for maximum efficiency (I found that even allocating hashmaps on each step is too expensive).
+It is similar to the `Environment` class in [`entity-gym`](https://entity-gym.readthedocs.io/en/latest/entity_gym/entity_gym.env.html#entity_gym.env.Environment), but somewhat lower-level to allow for maximum efficiency (I found that even allocating hashmaps on each step is too expensive).
 As a result of these optimizations (and some other issues), the `Environment` interface currently very cumbersome and difficult to use correctly, though I think this could mostly be fixed without comproming efficiency.
 
-The [`VecEnv`](src/low_level/vec_env.rs) is an efficient multi-threaded executor which exposes a vectorized `Environment` interface that allows multiple environments to be stepped in a single call.
+The [`VecEnv`](src/low_level/vec_env.rs) is a multi-threaded executor which exposes a vectorized `Environment` interface that allows multiple environments to be stepped in a single call.
 Since a single environment step can be a very cheap operation (cheaper than thread synchronization/context switching overhead), `VecEnv` is aggressively optimized to still benefit from parallelization.
 After a lot of experimentation and profiling, I arrived at the following strategy:
 - `VecEnv` spawns a fixed number of worker threads, each of which owns several `Environment` instances.
