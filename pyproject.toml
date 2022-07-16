@@ -19,3 +19,4 @@ build-backend = "maturin"
 
 [tool.maturin]
 features  = ["python"]
+profile = "release"
