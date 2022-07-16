@@ -7,7 +7,7 @@ The snake implementation is based on [https://github.com/marcusbuffett/bevy_snak
 
 I have tried to keep the code as close to the original as possible.
 The majority of the code in `lib.rs` is the same as the original `main.rs` file.
-Most of the entity-gym specific code is in `src/ai.rs`.
+Most of the entity-gym specific code is in [`src/ai.rs`](src/ai.rs).
 The `src/python.rs` contains some additional code required to export a Python API. The `train.py`, `train.ron`, and `pyproject.toml` files contain the code required to set up a Python environment and run training.
 
 ## Usage
@@ -24,7 +24,7 @@ Run with a trained neural network ([download link](https://www.dropbox.com/sh/la
 cargo run -- --agent-path bevy_snake1m/latest-step000000999424
 ```
 
-Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [`poetry`](https://python-poetry.org/) and only works on Linux, Nvidia GPU recommended):
+Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [poetry](https://python-poetry.org/) and only works on Linux, Nvidia GPU recommended):
 
 ```shell
 poetry install
@@ -52,7 +52,7 @@ When creating our app, we initialize the agent by loading a neural network from 
         })
 ```
 
-The core part of the integration happens inside the `snake_movement_agent` system defined in [`src/ai.rs`]().
+The core part of the integration happens inside the `snake_movement_agent` system defined in [`src/ai.rs`](src/ai.rs).
 
 ```rust
 pub(crate) fn snake_movement_agent(
@@ -65,17 +65,9 @@ pub(crate) fn snake_movement_agent(
 ) {
     if let Some((mut head, head_pos)) = heads.iter_mut().next() {
         let obs = Obs::new(segments_res.len() as f32)
-            .entities(food.iter().map(|(_, &Position { x, y })| Food { x, y }))
-            .entities(
-                [head_pos]
-                    .into_iter()
-                    .map(|&Position { x, y }| Head { x, y }),
-            )
-            .entities(
-                segment
-                    .iter()
-                    .map(|(_, &Position { x, y })| SnakeSegment { x, y }),
-            );
+            .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
+            .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
+            .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
         let action = player.0.act::<Move>(obs);
         match action {
             Some(Move(dir)) => {
@@ -183,8 +175,8 @@ In this case, we should terminate the application  by sending an `AppExit` event
 
 ## Training
 
-To support training, we define a `run_headless` method at the end of [`src/lib.rs`]() that creates a version of our app that runs as fast as possible and doesn't render any graphics.
-We also need some additional boilerplate that exports a Python interface, defined in [`src/python.rs`](). There are three interesting bits:
+To support training, we define a `run_headless` method at the end of [`src/lib.rs`](src/lib.rs) that creates a version of our app that runs as fast as possible and doesn't render any graphics.
+We also need some additional boilerplate that exports a Python interface, defined in [`src/python.rs`](src/python.rs). There are three interesting bits:
 
 1. We define a `Config` struct that allows us to pass configuration values to our game from Python (not actually used for anything here).
 
@@ -236,4 +228,4 @@ Arc::new(move |seed| {
 - When training, we crate and run many parallel game instances.
   If all of these have the same starting state, they can end up generating identical or highly correlated trajectories which degrades the training.
   For this reason, the `run_headless` method to receives a `seed` (which will be different for each App instance) and use it to randomize the starting.
-- All the PyO3/Python code is gated by a "python" feature flag to work around [https://github.com/PyO3/pyo3/issues/1708]().
+- All the PyO3/Python code is gated by a "python" feature flag to work around [https://github.com/PyO3/pyo3/issues/1708](https://github.com/PyO3/pyo3/issues/1708).
