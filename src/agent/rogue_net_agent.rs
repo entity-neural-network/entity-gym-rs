@@ -20,8 +20,8 @@ impl Agent for RogueNetAgent {
         let entities = obs
             .entities
             .into_iter()
-            .map(|(name, (feats, n))| {
-                let shape = (n, if n == 0 { 0 } else { feats.len() / n });
+            .map(|(name, (feats, dim))| {
+                let shape = (if dim == 0 { 0 } else { feats.len() / dim }, dim);
                 (
                     name.to_string(),
                     Array2::from_shape_vec(shape, feats).unwrap(),
