@@ -18,11 +18,10 @@ Running the game with random actions:
 cargo run
 ```
 
-Download and run with a trained neural network:
+Run with a trained neural network ([download link](https://www.dropbox.com/sh/laja5te8t9uojnw/AADqDndrEOzRgtoVzv8EK8Voa?dl=0)):
 
 ```shell
-wget TODO
-cargo run -- --model-path TODO
+cargo run -- --agent-path bevy_snake1m/latest-step000000999424
 ```
 
 Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [`poetry`](https://python-poetry.org/) and only works on Linux, Nvidia GPU recommended):
@@ -32,7 +31,7 @@ poetry install
 poetry run pip install setuptools==59.5.0
 poetry run pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 poetry run pip install torch-scatter -f https://data.pyg.org/whl/torch-1.10.0+cu113.html
-poetry run maturin develop --features=python --release
+poetry run pip install .
 poetry run python train.py --config=train.ron --checkpoint-dir=checkpoints
 ```
 
