@@ -14,6 +14,7 @@ from entity_gym.env import (
     VecCategoricalActionMask,
     VecSelectEntityActionMask,
 )
+from .entity_gym_rs import multisnake
 
 
 def clean_ragged_i64(x: RaggedBufferI64) -> RaggedBufferI64:

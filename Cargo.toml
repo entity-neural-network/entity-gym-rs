@@ -4,6 +4,8 @@ version = "0.1.0-dev"
 authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
 edition = "2021"
 
+[package.metadata.maturin]
+python-source = "python"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -21,7 +23,7 @@ clap = { version = "3.1.7", features = ["derive"] }
 crossbeam = "0.8.1"
 rustc-hash = "1.0"
 atomicbox = "0.4.0"
-rogue_net = { git = "https://github.com/entity-neural-network/rogue-net-rs", revision = "50eac46" }
+rogue_net = { git = "https://github.com/entity-neural-network/rogue-net-rs", rev = "50eac46" }
 
 anyhow = "1.0"
 
