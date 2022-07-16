@@ -472,6 +472,21 @@ optional = false
 python-versions = ">=3.7"
 
 [[package]]
+name = "maturin"
+version = "0.13.0"
+description = "Build and publish crates with pyo3, rust-cpython and cffi bindings as well as rust binaries as python packages"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
+
+[package.extras]
+zig = ["ziglang (>=0.9.0,<0.10.0)"]
+patchelf = ["patchelf"]
+
+[[package]]
 name = "moviepy"
 version = "1.0.3"
 description = "Video editing with Python"
@@ -952,6 +967,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "tomli"
+version = "2.0.1"
+description = "A lil' TOML parser"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "tqdm"
 version = "4.64.0"
 description = "Fast, Extensible Progress Meter"
@@ -1057,7 +1080,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<3.10"
-content-hash = "29766f4bdaf7ff994648b2dc6da788162749af1c961f4c9c2f973916e86a5a81"
+content-hash = "d961ca88e8a7df8597786ee17ab23a7119a24255d14270daac55fece4e602c85"
 
 [metadata.files]
 absl-py = []
@@ -1096,6 +1119,7 @@ importlib-resources = []
 mako = []
 markdown = []
 markupsafe = []
+maturin = []
 moviepy = []
 msgpack = []
 msgpack-numpy = []
@@ -1134,6 +1158,7 @@ stevedore = []
 tensorboard = []
 tensorboard-data-server = []
 tensorboard-plugin-wit = []
+tomli = []
 tqdm = []
 typing-extensions = []
 urllib3 = []

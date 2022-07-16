@@ -32,7 +32,7 @@ poetry install
 poetry run pip install setuptools==59.5.0
 poetry run pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 poetry run pip install torch-scatter -f https://data.pyg.org/whl/torch-1.10.0+cu113.html
-poetry run pip install .
+poetry run maturin develop --features=python --release
 poetry run python train.py --config=train.ron --checkpoint-dir=checkpoints
 ```
 
