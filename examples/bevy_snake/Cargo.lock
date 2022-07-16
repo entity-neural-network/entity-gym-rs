@@ -224,6 +224,7 @@ name = "bevy-snake-enn"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "clap",
  "entity-gym-rs",
  "pyo3",
  "rand",

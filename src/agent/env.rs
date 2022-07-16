@@ -6,9 +6,9 @@ use std::sync::mpsc::{Receiver, Sender};
 
 use super::{Agent, Featurizable, Obs};
 
-pub struct AgentEnvBridge {
+pub struct TrainAgentEnv {
     obs_space: ObsSpace,
-    action_space: ActionSpace,
+    action_space: Vec<(String, ActionSpace)>,
     action: Sender<u64>,
     observation: Receiver<Observation>,
 }
@@ -23,15 +23,16 @@ pub struct TrainAgent {
 #[derive(Debug, Clone, Default)]
 pub struct TrainEnvBuilder {
     entities: Vec<(String, Entity)>,
+    actions: Vec<(String, ActionSpace)>,
 }
 
-impl Environment for AgentEnvBridge {
+impl Environment for TrainAgentEnv {
     fn obs_space(&self) -> ObsSpace {
         self.obs_space.clone()
     }
 
     fn action_space(&self) -> Vec<(ActionType, ActionSpace)> {
-        vec![("action".to_string(), self.action_space.clone())]
+        self.action_space.clone()
     }
 
     fn agents() -> usize {
@@ -64,7 +65,7 @@ impl Agent for TrainAgent {
         let mut data = vec![];
         let mut counts = vec![];
         for name in &self.entity_names {
-            match obs.entities.get(name) {
+            match obs.entities.get(name.as_str()) {
                 Some((feats, c)) => {
                     data.extend(feats.iter());
                     counts.push(*c);
@@ -112,39 +113,46 @@ impl Agent for TrainAgent {
 }
 
 impl TrainEnvBuilder {
-    pub fn entity<E: Featurizable>(mut self, name: &str) -> Self {
+    pub fn entity<E: Featurizable>(mut self) -> Self {
         assert!(
-            self.entities.iter().all(|(n, _)| n != name),
+            self.entities.iter().all(|(n, _)| n != E::name()),
             "Already have an entity with name \"{}\"",
-            name
+            E::name(),
         );
         self.entities.push((
-            name.to_string(),
+            E::name().to_string(),
             Entity {
-                features: E::feature_names(),
+                features: E::feature_names().iter().map(|n| n.to_string()).collect(),
             },
         ));
         self
     }
 
-    pub fn build(self) -> (AgentEnvBridge, TrainAgent) {
+    pub fn action<A: super::Action>(mut self, name: &str) -> Self {
+        assert!(
+            self.actions.iter().all(|(n, _)| n != name),
+            "Already have an action with name \"{}\"",
+            name,
+        );
+        self.actions.push((
+            name.to_string(),
+            ActionSpace::Categorical {
+                choices: A::labels().iter().map(|c| c.to_string()).collect(),
+            },
+        ));
+        self
+    }
+
+    pub fn build(self) -> (TrainAgentEnv, TrainAgent) {
         let (action_tx, action_rx) = std::sync::mpsc::channel();
         let (observation_tx, observation_rx) = std::sync::mpsc::channel();
         let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
         (
-            AgentEnvBridge {
+            TrainAgentEnv {
                 obs_space: ObsSpace {
                     entities: self.entities.into_iter().collect(),
                 },
-                // TODO: hardcoded
-                action_space: ActionSpace::Categorical {
-                    choices: vec![
-                        "Up".to_string(),
-                        "Down".to_string(),
-                        "Left".to_string(),
-                        "Right".to_string(),
-                    ],
-                },
+                action_space: self.actions,
                 action: action_tx,
                 observation: observation_rx,
             },

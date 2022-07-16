@@ -22,7 +22,7 @@ impl Agent for RogueNetAgent {
             .into_iter()
             .map(|(name, (feats, n))| {
                 (
-                    name,
+                    name.to_string(),
                     Array2::from_shape_vec((n, feats.len() / n), feats).unwrap(),
                 )
             })

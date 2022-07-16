@@ -1,22 +1,30 @@
 use bevy::app::AppExit;
-use bevy::prelude::{Component, EventWriter, Query, Res, ResMut};
+use bevy::prelude::{EventWriter, NonSendMut, Query, Res};
 use entity_gym_rs::agent::{Action, Agent, AnyAgent, Featurizable, Obs};
 
-use crate::{Direction, Food, Position, SnakeHead, SnakeSegment, SnakeSegments};
+use crate::{Direction, Position, SnakeHead, SnakeSegments};
 
 pub(crate) fn snake_movement_agent(
-    mut player: ResMut<Player>,
+    mut player: NonSendMut<Player>,
     mut heads: Query<(&mut SnakeHead, &Position)>,
     mut exit: EventWriter<AppExit>,
     segments_res: Res<SnakeSegments>,
-    food: Query<(&Food, &Position)>,
-    segment: Query<(&SnakeSegment, &Position)>,
+    food: Query<(&crate::Food, &Position)>,
+    segment: Query<(&crate::SnakeSegment, &Position)>,
 ) {
     if let Some((mut head, head_pos)) = heads.iter_mut().next() {
         let obs = Obs::new(segments_res.len() as f32)
-            .entities("Food", food.iter().map(|(_, pos)| pos))
-            .entities("Head", [head_pos].into_iter())
-            .entities("SnakeSegment", segment.iter().map(|(_, pos)| pos));
+            .entities(food.iter().map(|(_, &Position { x, y })| Food { x, y }))
+            .entities(
+                [head_pos]
+                    .into_iter()
+                    .map(|&Position { x, y }| Head { x, y }),
+            )
+            .entities(
+                segment
+                    .iter()
+                    .map(|(_, &Position { x, y })| SnakeSegment { x, y }),
+            );
         let action = player.0.act::<Move>(obs);
         match action {
             Some(Move(dir)) => {
@@ -29,7 +37,6 @@ pub(crate) fn snake_movement_agent(
     }
 }
 
-#[derive(Component)]
 pub struct Player(pub AnyAgent);
 
 struct Move(Direction);
@@ -57,18 +64,81 @@ impl Action for Move {
     fn num_actions() -> u64 {
         4
     }
+
+    fn name() -> &'static str {
+        "move"
+    }
+
+    fn labels() -> &'static [&'static str] {
+        &["up", "down", "left", "right"]
+    }
 }
 
-impl Featurizable for Position {
+pub struct Head {
+    x: i32,
+    y: i32,
+}
+
+impl Featurizable for Head {
     fn num_feats() -> usize {
         2
     }
 
-    fn feature_names() -> Vec<String> {
-        vec!["x".to_string(), "y".to_string()]
+    fn feature_names() -> &'static [&'static str] {
+        &["x", "y"]
     }
 
     fn featurize(&self) -> Vec<f32> {
         vec![self.x as f32, self.y as f32]
+    }
+
+    fn name() -> &'static str {
+        "Head"
+    }
+}
+
+pub struct SnakeSegment {
+    x: i32,
+    y: i32,
+}
+
+impl Featurizable for SnakeSegment {
+    fn num_feats() -> usize {
+        2
+    }
+
+    fn feature_names() -> &'static [&'static str] {
+        &["x", "y"]
+    }
+
+    fn featurize(&self) -> Vec<f32> {
+        vec![self.x as f32, self.y as f32]
+    }
+
+    fn name() -> &'static str {
+        "SnakeSegment"
+    }
+}
+
+pub struct Food {
+    x: i32,
+    y: i32,
+}
+
+impl Featurizable for Food {
+    fn num_feats() -> usize {
+        2
+    }
+
+    fn feature_names() -> &'static [&'static str] {
+        &["x", "y"]
+    }
+
+    fn featurize(&self) -> Vec<f32> {
+        vec![self.x as f32, self.y as f32]
+    }
+
+    fn name() -> &'static str {
+        "Food"
     }
 }

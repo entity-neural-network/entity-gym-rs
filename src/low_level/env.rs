@@ -4,6 +4,20 @@ pub type EntityId = u64;
 pub type ActionType = String;
 pub type EntityType = String;
 
+// Could have a `SingleAgentEnv` that implement `Environment`
+// Could maybe use const generic for `agents`, return fixed size slices?
+pub trait Environment {
+    fn obs_space(&self) -> ObsSpace;
+    fn action_space(&self) -> Vec<(ActionType, ActionSpace)>;
+    fn agents() -> usize;
+
+    #[allow(clippy::vec_box)]
+    fn reset(&mut self) -> Vec<Box<Observation>>;
+    #[allow(clippy::vec_box)]
+    fn act(&mut self, action: &[Vec<Option<Action>>]) -> Vec<Box<Observation>>;
+    fn close(&mut self) {}
+}
+
 #[derive(Debug, Clone)]
 pub enum ActionSpace {
     Categorical { choices: Vec<String> },
@@ -60,18 +74,4 @@ pub struct Observation {
     pub done: bool,
     pub reward: f32,
     pub metrics: FxHashMap<String, f32>,
-}
-
-// Could have a `SingleAgentEnv` that implement `Environment`
-// Could maybe use const generic for `agents`, return fixed size slices?
-pub trait Environment {
-    fn obs_space(&self) -> ObsSpace;
-    fn action_space(&self) -> Vec<(ActionType, ActionSpace)>;
-    fn agents() -> usize;
-
-    #[allow(clippy::vec_box)]
-    fn reset(&mut self) -> Vec<Box<Observation>>;
-    #[allow(clippy::vec_box)]
-    fn act(&mut self, action: &[Vec<Option<Action>>]) -> Vec<Box<Observation>>;
-    fn close(&mut self) {}
 }

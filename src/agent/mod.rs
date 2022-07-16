@@ -8,7 +8,7 @@ mod rogue_net_agent;
 
 pub use action::Action;
 pub use agent::{Agent, AnyAgent};
-pub use env::{AgentEnvBridge, TrainAgent, TrainEnvBuilder};
+pub use env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 pub use featurizable::Featurizable;
 pub use obs::Obs;
 pub use random_agent::RandomAgent;

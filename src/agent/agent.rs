@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use super::{Action, Obs, RandomAgent, RogueNetAgent, TrainAgent};
 
 pub trait Agent {
@@ -10,8 +8,7 @@ pub trait Agent {
 
 pub enum AnyAgent {
     Random(RandomAgent),
-    // TODO: get rid of mutex?
-    TrainAgent(Arc<Mutex<TrainAgent>>),
+    TrainAgent(TrainAgent),
     RogueNetAgent(Box<RogueNetAgent>),
 }
 
@@ -25,7 +22,7 @@ impl AnyAgent {
     }
 
     pub fn train(agent: TrainAgent) -> AnyAgent {
-        AnyAgent::TrainAgent(Arc::new(Mutex::new(agent)))
+        AnyAgent::TrainAgent(agent)
     }
 }
 
@@ -33,7 +30,7 @@ impl Agent for AnyAgent {
     fn act<A: Action>(&mut self, obs: Obs) -> Option<A> {
         match self {
             AnyAgent::Random(agent) => agent.act::<A>(obs),
-            AnyAgent::TrainAgent(agent) => agent.lock().unwrap().act::<A>(obs),
+            AnyAgent::TrainAgent(agent) => agent.act::<A>(obs),
             AnyAgent::RogueNetAgent(agent) => agent.act::<A>(obs),
         }
     }
@@ -41,7 +38,7 @@ impl Agent for AnyAgent {
     fn game_over(&mut self) {
         match self {
             AnyAgent::Random(agent) => agent.game_over(),
-            AnyAgent::TrainAgent(agent) => agent.lock().unwrap().game_over(),
+            AnyAgent::TrainAgent(agent) => agent.game_over(),
             AnyAgent::RogueNetAgent(agent) => agent.game_over(),
         }
     }

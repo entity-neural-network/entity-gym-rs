@@ -1,18 +1,5 @@
 [project]
 name = "entity-gym-rs"
-# dependencies = [
-#     "ragged-buffer>=0.3.7",
-#     "entity-gym>=0.1.5",
-#     "enn-trainer>=0.1.8",
-#     "cffi",
-# ]
-
-# [build-system]
-# requires = ["maturin>=0.13,<0.14"]
-# build-backend = "maturin"
-
-# [tool.maturin]
-# features  = ["python"]
 
 [tool.poetry]
 name = "entity-gym-rs"
@@ -25,6 +12,7 @@ python = ">=3.8.0,<3.10"
 numpy = "^1.22.3"
 ragged-buffer = "^0.3.7"
 entity-gym = "^0.1.5"
+entity-gym-rs = { path = "../..", develop = true }
 
 [build-system]
 requires = ["maturin>=0.13,<0.14"]

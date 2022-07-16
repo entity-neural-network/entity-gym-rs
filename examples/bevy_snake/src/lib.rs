@@ -194,7 +194,7 @@ fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&m
 fn game_over(
     mut commands: Commands,
     mut reader: EventReader<GameOverEvent>,
-    mut player: ResMut<Player>,
+    mut player: NonSendMut<Player>,
     rng: ResMut<SmallRng>,
     segments_res: ResMut<SnakeSegments>,
     food: Query<Entity, With<Food>>,
@@ -284,7 +284,7 @@ fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>) {
     }
 }
 
-pub fn run() {
+pub fn run(agent_path: Option<String>) {
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(WindowDescriptor {
@@ -293,10 +293,10 @@ pub fn run() {
             height: 500.0,
             ..default()
         })
-        //.insert_resource(Player::Random(RandomAgent::default()))
-        .insert_resource(Player(AnyAgent::rogue_net(
-            "norelattn-1m/latest-step000000999424",
-        )))
+        .insert_non_send_resource(match agent_path {
+            Some(path) => Player(AnyAgent::rogue_net(&path)),
+            None => Player(AnyAgent::random()),
+        })
         .insert_resource(FoodTimer(7))
         .insert_resource(SmallRng::seed_from_u64(0))
         .add_startup_system(setup_camera)
@@ -331,7 +331,7 @@ pub fn run_headless(agent: AnyAgent, seed: u64) {
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
         )))
-        .insert_resource(Player(agent))
+        .insert_non_send_resource(Player(agent))
         .insert_resource(FoodTimer(7))
         .add_startup_system(setup_camera)
         .add_startup_system(spawn_snake)

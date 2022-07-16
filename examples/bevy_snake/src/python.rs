@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::thread;
 
-use crate::Position;
-use entity_gym_rs::agent::{AgentEnvBridge, AnyAgent, TrainAgent, TrainEnvBuilder};
+use crate::ai;
+use entity_gym_rs::agent::{AnyAgent, TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
 use entity_gym_rs::low_level::VecEnv;
 use pyo3::prelude::*;
@@ -19,11 +19,11 @@ impl Config {
     }
 }
 
-fn env(_config: Config) -> (AgentEnvBridge, TrainAgent) {
+fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
     TrainEnvBuilder::default()
-        .entity::<Position>("Head")
-        .entity::<Position>("SnakeSegment")
-        .entity::<Position>("Food")
+        .entity::<ai::Head>()
+        .entity::<ai::SnakeSegment>()
+        .entity::<ai::Food>()
         .build()
 }
 
