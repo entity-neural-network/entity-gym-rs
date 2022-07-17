@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 
 #[derive(Clone)]
 #[pyclass]
-struct Config;
+pub struct Config;
 
 #[pymethods]
 impl Config {
@@ -19,7 +19,7 @@ impl Config {
     }
 }
 
-fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
+pub fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
     TrainEnvBuilder::default()
         .entity::<ai::Head>()
         .entity::<ai::SnakeSegment>()

@@ -11,10 +11,15 @@ name = "bevy_snake_enn"
 [dependencies]
 bevy = "0.7.0"
 rand = { version = "0.8.5", features = ["small_rng"] }
-clap = { version = "3.1.7", features = ["derive"] }
 
 entity-gym-rs = { path = "../.." }
 pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
 
+clap = { version = "3.1.7", features = ["derive"] }
+ragged-buffer = "0.3.8"
+
+[profile.release]
+debug = true
+
 [features]
-python = ["pyo3", "entity-gym-rs/python"]
+python = ["pyo3", "entity-gym-rs/python", "ragged-buffer/python"]

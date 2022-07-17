@@ -2,7 +2,7 @@ use crate::low_level::{
     Action, ActionMask, ActionSpace, ActionType, CompactFeatures, Entity, Environment, ObsSpace,
     Observation,
 };
-use std::sync::mpsc::{Receiver, Sender};
+use crossbeam::channel::{bounded, Receiver, Sender};
 
 use super::{Agent, Featurizable, Obs};
 
@@ -144,8 +144,8 @@ impl TrainEnvBuilder {
     }
 
     pub fn build(self) -> (TrainAgentEnv, TrainAgent) {
-        let (action_tx, action_rx) = std::sync::mpsc::channel();
-        let (observation_tx, observation_rx) = std::sync::mpsc::channel();
+        let (action_tx, action_rx) = bounded(1);
+        let (observation_tx, observation_rx) = bounded(1);
         let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
         (
             TrainAgentEnv {

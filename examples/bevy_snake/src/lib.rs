@@ -1,6 +1,6 @@
 mod ai;
 #[cfg(feature = "python")]
-mod python;
+pub mod python;
 
 use std::time::Duration;
 

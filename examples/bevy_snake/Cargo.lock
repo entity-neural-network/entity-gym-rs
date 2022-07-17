@@ -227,6 +227,7 @@ dependencies = [
  "clap",
  "entity-gym-rs",
  "pyo3",
+ "ragged-buffer",
  "rand",
 ]
 
@@ -1383,6 +1384,7 @@ dependencies = [
  "bevy",
  "clap",
  "crossbeam",
+ "crossbeam-channel",
  "lazy_static",
  "maplit",
  "ndarray",

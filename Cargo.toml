@@ -29,6 +29,8 @@ anyhow = "1.0"
 
 lazy_static = "1.4" 
 
+crossbeam-channel = "0.5"
+
+
 [features]
-default = ["python"]
 python = ["pyo3", "numpy", "ragged-buffer/python"]

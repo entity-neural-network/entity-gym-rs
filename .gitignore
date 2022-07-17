@@ -6,4 +6,5 @@ examples/*/runs
 examples/*/wandb
 /runs
 python/entity_gym_rs/*.so
+python/entity_gym_rs/*.pyd
 .vscode
