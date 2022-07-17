@@ -204,8 +204,8 @@ fn game_over(
         for ent in food.iter().chain(segments.iter()) {
             commands.entity(ent).despawn();
         }
+        player.0.game_over(segments_res.0.len() as f32);
         spawn_snake(commands, segments_res, rng);
-        player.0.game_over();
     }
 }
 

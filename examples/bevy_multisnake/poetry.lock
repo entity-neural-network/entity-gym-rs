@@ -241,24 +241,6 @@ ragged-buffer = ">=0.3.9,<0.4.0"
 tqdm = ">=4.63.1,<5.0.0"
 
 [[package]]
-name = "entity-gym-rs"
-version = "0.1.0"
-description = ""
-category = "main"
-optional = false
-python-versions = ">=3.8.0,<3.10"
-develop = true
-
-[package.dependencies]
-entity-gym = "^0.1.5"
-numpy = "^1.22.3"
-ragged-buffer = "^0.3.7"
-
-[package.source]
-type = "directory"
-url = "../.."
-
-[[package]]
 name = "gitdb"
 version = "4.0.9"
 description = "Git Object Database"
@@ -1080,7 +1062,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<3.10"
-content-hash = "d961ca88e8a7df8597786ee17ab23a7119a24255d14270daac55fece4e602c85"
+content-hash = "0e5bbcaef7b4255e211251873f1b30cdcb3d32bf0db92e4831fa340253d1a2c0"
 
 [metadata.files]
 absl-py = []
@@ -1103,7 +1085,6 @@ docker-pycreds = []
 docstring-parser = []
 enn-trainer = []
 entity-gym = []
-entity-gym-rs = []
 gitdb = []
 gitpython = []
 google-auth = []

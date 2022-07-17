@@ -9,7 +9,7 @@ pub type EntityType = String;
 pub trait Environment {
     fn obs_space(&self) -> ObsSpace;
     fn action_space(&self) -> Vec<(ActionType, ActionSpace)>;
-    fn agents() -> usize;
+    fn agents(&self) -> usize;
 
     #[allow(clippy::vec_box)]
     fn reset(&mut self) -> Vec<Box<Observation>>;

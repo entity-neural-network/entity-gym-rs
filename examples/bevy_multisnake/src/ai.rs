@@ -12,9 +12,10 @@ pub(crate) fn snake_movement_agent(
     food: Query<(&crate::Food, &Position, &Player)>,
     segment: Query<(&crate::SnakeSegment, &Position, &Player)>,
 ) {
-    for (mut head, head_pos, player) in heads.iter_mut() {
+    let mut head_actions = vec![];
+    for (head, head_pos, player) in heads.iter_mut() {
         if let Some(agent) = &mut players.0[player.index()] {
-            let obs = Obs::new(segments_res.len() as f32)
+            let obs = Obs::new(segments_res.0[player.index()].len() as f32)
                 .entities(food.iter().map(|(_, p, plr)| Food {
                     x: p.x,
                     y: p.y,
@@ -30,18 +31,22 @@ pub(crate) fn snake_movement_agent(
                     y: p.y,
                     is_enemy: player != plr,
                 }));
-            let action = agent.act::<Move>(&obs);
-            match action {
-                Some(Move(dir)) => {
-                    if dir != head.direction.opposite() {
-                        head.direction = dir;
-                    }
+            let action = agent.act_async::<Move>(&obs);
+            head_actions.push((head, action));
+        }
+    }
+    for (mut head, action) in head_actions.into_iter() {
+        match action.rcv() {
+            Some(Move(dir)) => {
+                if dir != head.direction.opposite() {
+                    head.direction = dir;
                 }
-                None => exit.send(AppExit),
             }
+            None => exit.send(AppExit),
         }
     }
 }
+
 pub struct Players(pub [Option<AnyAgent>; 2]);
 
 pub struct Move(Direction);

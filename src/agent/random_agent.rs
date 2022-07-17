@@ -1,7 +1,7 @@
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
 
-use super::{Action, Agent, Obs};
+use super::{Action, ActionReceiver, Agent, Obs};
 
 pub struct RandomAgent {
     rng: SmallRng,
@@ -10,6 +10,10 @@ pub struct RandomAgent {
 impl Agent for RandomAgent {
     fn act<A: Action>(&mut self, _: &Obs) -> Option<A> {
         Some(A::from_u64(self.rng.gen_range(0..A::num_actions())))
+    }
+
+    fn act_async<A: Action>(&mut self, _: &Obs) -> ActionReceiver<A> {
+        ActionReceiver::value(A::from_u64(self.rng.gen_range(0..A::num_actions())))
     }
 }
 

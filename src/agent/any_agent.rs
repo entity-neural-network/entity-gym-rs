@@ -1,4 +1,4 @@
-use super::{Action, Agent, Obs, RandomAgent, RogueNetAgent, TrainAgent};
+use super::{Action, ActionReceiver, Agent, Obs, RandomAgent, RogueNetAgent, TrainAgent};
 
 pub enum AnyAgent {
     Random(RandomAgent),
@@ -33,11 +33,19 @@ impl Agent for AnyAgent {
         }
     }
 
-    fn game_over(&mut self) {
+    fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
         match self {
-            AnyAgent::Random(agent) => agent.game_over(),
-            AnyAgent::TrainAgent(agent) => agent.game_over(),
-            AnyAgent::RogueNetAgent(agent) => agent.game_over(),
+            AnyAgent::Random(agent) => agent.act_async::<A>(obs),
+            AnyAgent::TrainAgent(agent) => agent.act_async::<A>(obs),
+            AnyAgent::RogueNetAgent(agent) => agent.act_async::<A>(obs),
+        }
+    }
+
+    fn game_over(&mut self, score: f32) {
+        match self {
+            AnyAgent::Random(agent) => agent.game_over(score),
+            AnyAgent::TrainAgent(agent) => agent.game_over(score),
+            AnyAgent::RogueNetAgent(agent) => agent.game_over(score),
         }
     }
 }

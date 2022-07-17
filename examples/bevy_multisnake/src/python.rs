@@ -33,9 +33,11 @@ fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: 
     PyVecEnv {
         env: VecEnv::new(
             Arc::new(move |seed| {
-                let (env, agents) = env(config.clone());
+                let (env, mut agents) = env(config.clone());
+                let a1 = AnyAgent::train(agents.pop().unwrap());
+                let a0 = AnyAgent::train(agents.pop().unwrap());
                 thread::spawn(move || {
-                    super::run_headless(agents.into_iter().map(AnyAgent::train).collect(), seed);
+                    super::run_headless([a0, a1], seed);
                 });
                 env
             }),
@@ -47,7 +49,7 @@ fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: 
 }
 
 #[pymodule]
-fn bevy_snake_enn(_py: Python, m: &PyModule) -> PyResult<()> {
+fn bevy_multisnake(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create_env, m)?)?;
     m.add_class::<Config>()?;
     Ok(())

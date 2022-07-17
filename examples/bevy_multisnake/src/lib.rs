@@ -247,10 +247,12 @@ fn game_over(
         commands.entity(ent).despawn();
     }
     food_timer.0 = [Some(4), Some(4)];
-    spawn_snake(commands, segments_res, rng);
-    for player in players.0.iter_mut().flatten() {
-        player.game_over();
+    for (i, player) in players.0.iter_mut().enumerate() {
+        if let Some(player) = player {
+            player.game_over(segments_res.0[i].len() as f32);
+        }
     }
+    spawn_snake(commands, segments_res, rng);
 }
 
 fn snake_eating(

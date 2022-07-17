@@ -1,4 +1,4 @@
-use bevy_snake_enn::run;
+use bevy_multisnake::run;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
