@@ -2,25 +2,25 @@ use bevy::app::AppExit;
 use bevy::prelude::{EventWriter, NonSendMut, Query, Res};
 use entity_gym_rs::agent::{Action, Agent, AnyAgent, Featurizable, Obs};
 
-use crate::{Direction, Player, Position, SnakeHead, SnakeSegments};
+use crate::{Direction, Pause, Player, Position, SnakeHead, SnakeSegments};
 
 pub(crate) fn snake_movement_agent(
     mut players: NonSendMut<Players>,
     mut heads: Query<(&mut SnakeHead, &Position, &Player)>,
     mut exit: EventWriter<AppExit>,
+    pause: Res<Pause>,
     segments_res: Res<SnakeSegments>,
-    food: Query<(&crate::Food, &Position, &Player)>,
+    food: Query<(&crate::Food, &Position)>,
     segment: Query<(&crate::SnakeSegment, &Position, &Player)>,
 ) {
+    if pause.0 > 0 {
+        return;
+    }
     let mut head_actions = vec![];
     for (head, head_pos, player) in heads.iter_mut() {
         if let Some(agent) = &mut players.0[player.index()] {
             let obs = Obs::new(segments_res.0[player.index()].len() as f32)
-                .entities(food.iter().map(|(_, p, plr)| Food {
-                    x: p.x,
-                    y: p.y,
-                    is_enemy: player != plr,
-                }))
+                .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
                 .entities([head_pos].iter().map(|p| Head {
                     x: p.x,
                     y: p.y,
@@ -143,24 +143,19 @@ impl Featurizable for SnakeSegment {
 pub struct Food {
     x: i32,
     y: i32,
-    is_enemy: bool,
 }
 
 impl Featurizable for Food {
     fn num_feats() -> usize {
-        3
+        2
     }
 
     fn feature_names() -> &'static [&'static str] {
-        &["x", "y", "is_enemy"]
+        &["x", "y"]
     }
 
     fn featurize(&self) -> Vec<f32> {
-        vec![
-            self.x as f32,
-            self.y as f32,
-            if self.is_enemy { 1. } else { 0. },
-        ]
+        vec![self.x as f32, self.y as f32]
     }
 
     fn name() -> &'static str {

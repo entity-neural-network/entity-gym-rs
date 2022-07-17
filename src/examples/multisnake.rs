@@ -39,6 +39,7 @@ struct Snake {
 }
 
 impl MultiSnake {
+    #[cfg(feature = "python")]
     pub fn new(
         board_size: usize,
         num_snakes: usize,
