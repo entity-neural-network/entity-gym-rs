@@ -39,29 +39,6 @@ struct Snake {
 }
 
 impl MultiSnake {
-    pub fn new(
-        board_size: usize,
-        num_snakes: usize,
-        max_snake_length: usize,
-        max_step: usize,
-        seed: u64,
-    ) -> MultiSnake {
-        MultiSnake {
-            board_size,
-            num_snakes,
-            max_snake_length,
-            max_step,
-
-            rng: SmallRng::seed_from_u64(seed),
-            snakes: Vec::with_capacity(num_snakes),
-            food: Vec::with_capacity(num_snakes),
-            game_over: false,
-            last_score: 0.0,
-            score: 0.0,
-            step: 0,
-        }
-    }
-
     fn observe(&self) -> Box<Observation> {
         let nhead = self.snakes.len();
         let nsegment = self

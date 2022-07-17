@@ -17,7 +17,7 @@ pub(crate) fn snake_movement_agent(
             .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
             .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
             .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
-        let action = player.0.act::<Move>(obs);
+        let action = player.0.act::<Move>(&obs);
         match action {
             Some(Move(dir)) => {
                 if dir != head.direction.opposite() {

@@ -9,8 +9,8 @@ use super::{Agent, Featurizable, Obs};
 pub struct TrainAgentEnv {
     obs_space: ObsSpace,
     action_space: Vec<(String, ActionSpace)>,
-    action: Sender<u64>,
-    observation: Receiver<Observation>,
+    action: Vec<Sender<u64>>,
+    observation: Vec<Receiver<Observation>>,
 }
 
 pub struct TrainAgent {
@@ -40,28 +40,36 @@ impl Environment for TrainAgentEnv {
     }
 
     fn reset(&mut self) -> Vec<Box<Observation>> {
-        vec![Box::new(self.observation.recv().unwrap())]
+        self.observation
+            .iter()
+            .map(|obs| Box::new(obs.recv().unwrap()))
+            .collect()
     }
 
     fn act(&mut self, action: &[Vec<Option<Action>>]) -> Vec<Box<Observation>> {
-        assert!(action.len() == 1);
-        assert!(action[0].len() == 1);
-        match &action[0][0] {
-            Some(Action::Categorical { actors: _, action }) => {
-                assert!(action.len() == 1);
-                self.action.send(action[0] as u64).unwrap();
-            }
-            Some(_) => panic!("unexpected action"),
-            None => {
-                panic!("No action provided");
+        assert!(action.len() == self.action.len());
+        for (sender, action) in self.action.iter().zip(action.iter()) {
+            assert!(action.len() == 1);
+            match &action[0] {
+                Some(Action::Categorical { actors: _, action }) => {
+                    assert!(action.len() == 1);
+                    sender.send(action[0] as u64).unwrap();
+                }
+                Some(_) => panic!("unexpected action"),
+                None => {
+                    panic!("No action provided");
+                }
             }
         }
-        vec![Box::new(self.observation.recv().unwrap())]
+        self.observation
+            .iter()
+            .map(|obs| Box::new(obs.recv().unwrap()))
+            .collect()
     }
 }
 
 impl Agent for TrainAgent {
-    fn act<A: super::Action>(&mut self, obs: Obs) -> Option<A> {
+    fn act<A: super::Action>(&mut self, obs: &Obs) -> Option<A> {
         let mut data = vec![];
         let mut counts = vec![];
         for name in &self.entity_names {
@@ -143,6 +151,34 @@ impl TrainEnvBuilder {
         self
     }
 
+    pub fn build_multiagent(self, num_agents: usize) -> (TrainAgentEnv, Vec<TrainAgent>) {
+        let mut environment = TrainAgentEnv {
+            obs_space: ObsSpace {
+                entities: self.entities.to_vec(),
+            },
+            action_space: self.actions,
+            action: vec![],
+            observation: vec![],
+        };
+        let mut agents = vec![];
+
+        for _ in 0..num_agents {
+            let (action_tx, action_rx) = bounded(1);
+            let (observation_tx, observation_rx) = bounded(1);
+            let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
+            environment.action.push(action_tx);
+            environment.observation.push(observation_rx);
+            agents.push(TrainAgent {
+                action: action_rx,
+                observation: observation_tx,
+                entity_names,
+                score: None,
+            });
+        }
+
+        (environment, agents)
+    }
+
     pub fn build(self) -> (TrainAgentEnv, TrainAgent) {
         let (action_tx, action_rx) = bounded(1);
         let (observation_tx, observation_rx) = bounded(1);
@@ -153,8 +189,8 @@ impl TrainEnvBuilder {
                     entities: self.entities.into_iter().collect(),
                 },
                 action_space: self.actions,
-                action: action_tx,
-                observation: observation_rx,
+                action: vec![action_tx],
+                observation: vec![observation_rx],
             },
             TrainAgent {
                 action: action_rx,

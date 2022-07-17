@@ -1,10 +1,4 @@
-use super::{Action, Obs, RandomAgent, RogueNetAgent, TrainAgent};
-
-pub trait Agent {
-    fn act<A: Action>(&mut self, obs: Obs) -> Option<A>;
-
-    fn game_over(&mut self) {}
-}
+use super::{Action, Agent, Obs, RandomAgent, RogueNetAgent, TrainAgent};
 
 pub enum AnyAgent {
     Random(RandomAgent),
@@ -17,6 +11,10 @@ impl AnyAgent {
         AnyAgent::Random(RandomAgent::default())
     }
 
+    pub fn random_seeded(seed: u64) -> AnyAgent {
+        AnyAgent::Random(RandomAgent::new(seed))
+    }
+
     pub fn rogue_net(path: &str) -> AnyAgent {
         AnyAgent::RogueNetAgent(Box::new(RogueNetAgent::load(path)))
     }
@@ -27,7 +25,7 @@ impl AnyAgent {
 }
 
 impl Agent for AnyAgent {
-    fn act<A: Action>(&mut self, obs: Obs) -> Option<A> {
+    fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
         match self {
             AnyAgent::Random(agent) => agent.act::<A>(obs),
             AnyAgent::TrainAgent(agent) => agent.act::<A>(obs),
