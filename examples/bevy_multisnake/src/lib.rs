@@ -374,18 +374,16 @@ fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>, pause
 }
 
 pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
-    let mut main_system = 
-            SystemSet::new()
-                .with_system(snake_movement_agent)
-                .with_system(snake_movement.after(snake_movement_agent))
-                .with_system(snake_eating.after(snake_movement))
-                .with_system(snake_growth.after(snake_eating))
-                .with_system(food_spawner.after(snake_growth));
+    let mut main_system = SystemSet::new()
+        .with_system(snake_movement_agent)
+        .with_system(snake_movement.after(snake_movement_agent))
+        .with_system(snake_eating.after(snake_movement))
+        .with_system(snake_growth.after(snake_eating))
+        .with_system(food_spawner.after(snake_growth));
     if let Some(timstep) = timstep {
         main_system = main_system.with_run_criteria(FixedTimestep::step(timstep));
     }
-    app
-        .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+    app.insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(Pause(0))
         .insert_resource(FoodTimer(Some(4)))
         .add_startup_system(setup_camera)
@@ -399,8 +397,15 @@ pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
         .add_system(game_over.after(snake_movement))
 }
 
-
-pub fn run(agent_path: Option<String>, easy_mode: bool) {
+pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: bool) {
+    let opponent: Box<dyn Agent> = match agent_path {
+        Some(path) => Box::new(RogueNetAgent::load(&path)),
+        None => Box::new(RandomAgent::from_seed(1)),
+    };
+    let player: Option<Box<dyn Agent>> = match agent2_path {
+        Some(path) => Some(Box::new(RogueNetAgent::load(&path))),
+        None => None,
+    };
     base_app(&mut App::new(), 0, Some(0.150))
         .insert_resource(WindowDescriptor {
             title: "Snake!".to_string(),
@@ -409,10 +414,15 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
             ..default()
         })
         .insert_resource(Config { easy_mode })
-        .insert_non_send_resource(match agent_path {
-            Some(path) => Players([None, Some(Box::new(RogueNetAgent::load(path)))]),
-            None => Players([None, Some(Box::new(RandomAgent::from_seed(1)))]),
-        })
+        .insert_resource(Pause(0))
+        .insert_non_send_resource(Players([player, Some(opponent)]))
+        .insert_resource(FoodTimer(Some(4)))
+        .insert_resource(SmallRng::seed_from_u64(0))
+        .add_startup_system(setup_camera)
+        .add_startup_system(spawn_snake)
+        .insert_resource(SnakeSegments::default())
+        .insert_resource(LastTailPosition::default())
+        .add_event::<GrowthEvent>()
         .add_system(snake_movement_input.before(snake_movement))
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
