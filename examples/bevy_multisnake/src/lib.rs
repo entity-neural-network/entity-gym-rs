@@ -264,7 +264,6 @@ fn game_over(
     segments: Query<Entity, With<SnakeSegment>>,
 ) {
     if let Some(GameOverEvent(winner)) = reader.iter().next() {
-        println!("Game over! {:?} wins!", winner);
         pause.0 = 5;
         clear_color.0 = SNAKE_SEGMENT_COLOR[winner.index()];
         for ent in food.iter().chain(segments.iter()) {
@@ -421,6 +420,7 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
 pub fn run_headless(agents: [AnyAgent; 2], seed: u64) {
     let [a1, a2] = agents;
     App::new()
+        .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
         )))
@@ -434,7 +434,6 @@ pub fn run_headless(agents: [AnyAgent; 2], seed: u64) {
         .insert_resource(SnakeSegments::default())
         .insert_resource(LastTailPosition::default())
         .add_event::<GrowthEvent>()
-        //.add_system(snake_movement_input.before(snake_movement))
         .add_event::<GameOverEvent>()
         .add_system_set(
             SystemSet::new()

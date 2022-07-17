@@ -232,8 +232,10 @@ impl VecEnvInner {
                             actions.push(action);
                         }
                         let mut obs = env.act(&actions);
-                        if obs[0].done {
+                        let mut done = obs[0].done;
+                        while done {
                             let mut onew = env.reset();
+                            done = onew[0].done;
                             for i in 0..obs.len() {
                                 onew[i].reward = obs[i].reward;
                                 onew[i].done = obs[i].done;
