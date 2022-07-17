@@ -399,7 +399,7 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
         .add_event::<GameOverEvent>()
         .add_system_set(
             SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(0.250))
+                .with_run_criteria(FixedTimestep::step(0.150))
                 .with_system(snake_movement_agent)
                 .with_system(snake_movement)
                 .with_system(snake_eating.after(snake_movement))
