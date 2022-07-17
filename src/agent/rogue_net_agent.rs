@@ -1,7 +1,7 @@
 use ndarray::Array2;
 use rogue_net::{load_checkpoint, RogueNet};
 
-use super::agent::Agent;
+use super::Agent;
 use super::{Action, Obs};
 
 pub struct RogueNetAgent {
@@ -16,14 +16,14 @@ impl RogueNetAgent {
 }
 
 impl Agent for RogueNetAgent {
-    fn act<A: Action>(&mut self, obs: Obs) -> Option<A> {
+    fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
         let entities = obs
             .entities
-            .into_iter()
+            .iter()
             .map(|(name, (feats, count, dim))| {
                 (
                     name.to_string(),
-                    Array2::from_shape_vec((count, dim), feats).unwrap(),
+                    Array2::from_shape_vec((*count, *dim), feats.clone()).unwrap(),
                 )
             })
             .collect();

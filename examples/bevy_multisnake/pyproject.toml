@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "bevy_snake_enn"
+version = "0.1.0"
+description = ""
+authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8.0,<3.10"
+enn-trainer = "^0.1.8"
+entity-gym-rs = { path = "../..", develop = true }
+maturin = "^0.13.0"
+
+[build-system]
+requires = ["maturin>=0.13,<0.14"]
+build-backend = "maturin"
+
+[tool.maturin]
+features  = ["python"]
+profile = "release"
