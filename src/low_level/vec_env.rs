@@ -143,12 +143,30 @@ impl VecEnvInner {
             } else {
                 0
             };
-        assert!(local_envs % T::agents() == 0);
+        assert!(
+            local_envs > 0,
+            "No environments for thread {} ({}/{} nthread={})",
+            thread_id,
+            local_envs,
+            total_envs,
+            nthread,
+        );
+        let mut agents_per_env = None;
+        let mut envs = vec![];
         let env_offset =
             thread_id * (total_envs / nthread) + total_envs % nthread + env_offset as usize;
-        let mut envs = (0..local_envs / T::agents())
-            .map(|i| create_env((i + env_offset).try_into().unwrap()))
-            .collect::<Vec<_>>();
+        let mut env_count = 0;
+        while env_count < local_envs {
+            let env = create_env((envs.len() + env_offset).try_into().unwrap());
+            match &mut agents_per_env {
+                None => agents_per_env = Some(env.agents()),
+                Some(n) => assert_eq!(env.agents(), *n),
+            }
+            env_count += env.agents();
+            envs.push(env);
+        }
+        let agents_per_env = agents_per_env.unwrap();
+        assert!(local_envs % agents_per_env == 0);
         let mut action_masks = vec![];
         loop {
             let task = rx.recv().unwrap();
@@ -157,7 +175,7 @@ impl VecEnvInner {
                 Task::Reset => {
                     action_masks.clear();
                     for (i, env) in envs.iter_mut().enumerate() {
-                        let env_id = i * T::agents() + env_offset;
+                        let env_id = i * agents_per_env + env_offset;
                         let obs = env.reset();
                         for (j, obs) in obs.into_iter().enumerate() {
                             action_masks.push(obs.actions.clone());
@@ -166,8 +184,8 @@ impl VecEnvInner {
                     }
                     if self
                         .completed
-                        .fetch_add(envs.len() * T::agents(), Ordering::SeqCst)
-                        == total_envs - envs.len() * T::agents()
+                        .fetch_add(envs.len() * agents_per_env, Ordering::SeqCst)
+                        == total_envs - envs.len() * agents_per_env
                     {
                         self.wake_obs.unpark();
                     }
@@ -175,16 +193,18 @@ impl VecEnvInner {
                 Task::RawBatchAct(ragged_actions) => {
                     let mut new_action_masks = Vec::with_capacity(action_masks.len());
                     for (i, env) in envs.iter_mut().enumerate() {
-                        let mut actions = Vec::with_capacity(T::agents());
-                        for agent in 0..T::agents() {
-                            let env_id = env_offset + i * T::agents() + agent;
+                        let mut actions = Vec::with_capacity(agents_per_env);
+                        for agent in 0..agents_per_env {
+                            let env_id = env_offset + i * agents_per_env + agent;
                             let action = ragged_actions
                                 .iter()
                                 .enumerate()
                                 .map(|(idx_act_type, a)| match a {
                                     Some(a) => {
                                         let subarray = a.subarrays[env_id].clone();
-                                        match &action_masks[i * T::agents() + agent][idx_act_type] {
+                                        match &action_masks[i * agents_per_env + agent]
+                                            [idx_act_type]
+                                        {
                                             Some(ActionMask::DenseCategorical {
                                                 actors, ..
                                             }) => Some(Action::Categorical {
@@ -220,7 +240,7 @@ impl VecEnvInner {
                             }
                             obs = onew;
                         }
-                        let env_id = env_offset + i * T::agents();
+                        let env_id = env_offset + i * agents_per_env;
                         for (j, obs) in obs.into_iter().enumerate() {
                             new_action_masks.push(obs.actions.clone());
                             self.obs[env_id + j].store(Some(obs), Ordering::SeqCst);
@@ -228,8 +248,8 @@ impl VecEnvInner {
                     }
                     if self
                         .completed
-                        .fetch_add(envs.len() * T::agents(), Ordering::SeqCst)
-                        == total_envs - envs.len() * T::agents()
+                        .fetch_add(envs.len() * agents_per_env, Ordering::SeqCst)
+                        == total_envs - envs.len() * agents_per_env
                     {
                         self.wake_obs.unpark();
                     }

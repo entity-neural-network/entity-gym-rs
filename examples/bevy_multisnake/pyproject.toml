@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "bevy_snake_enn"
+name = "bevy_multisnake"
 version = "0.1.0"
 description = ""
 authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
@@ -7,8 +7,9 @@ authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
 [tool.poetry.dependencies]
 python = ">=3.8.0,<3.10"
 enn-trainer = "^0.1.8"
-entity-gym-rs = { path = "../..", develop = true }
+# entity-gym-rs = { path = "../.." }
 maturin = "^0.13.0"
+hyperstate = "^0.4.1"
 
 [build-system]
 requires = ["maturin>=0.13,<0.14"]

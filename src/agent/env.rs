@@ -1,10 +1,13 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+
 use crate::low_level::{
     Action, ActionMask, ActionSpace, ActionType, CompactFeatures, Entity, Environment, ObsSpace,
     Observation,
 };
 use crossbeam::channel::{bounded, Receiver, Sender};
 
-use super::{Agent, Featurizable, Obs};
+use super::{ActionReceiver, Agent, Featurizable, InnerActionReceiver, Obs};
 
 pub struct TrainAgentEnv {
     obs_space: ObsSpace,
@@ -18,6 +21,18 @@ pub struct TrainAgent {
     observation: Sender<Observation>,
     entity_names: Vec<String>,
     score: Option<f32>,
+
+    // The `obs_remaining` counters are shared between all agents that connect to the same
+    // environment and is used to detect deadlocks that would be caused by an agent awaiting
+    // an action before all agents have received an observation.
+    // When acting, the agent decrements the counter. When receiving an observation, the agent
+    // increments the counter. To prevent an agent from observing a counter reset before it has
+    // reached the next step, we use two counters which we swap every step.
+    // The `iremaining` variable keeps track of the counter that is currently in use.
+    obs_remaining: [Arc<AtomicUsize>; 2],
+    iremaining: usize,
+    observation_sent: bool,
+    agent_count: usize,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -35,8 +50,8 @@ impl Environment for TrainAgentEnv {
         self.action_space.clone()
     }
 
-    fn agents() -> usize {
-        1
+    fn agents(&self) -> usize {
+        self.action.len()
     }
 
     fn reset(&mut self) -> Vec<Box<Observation>> {
@@ -70,6 +85,59 @@ impl Environment for TrainAgentEnv {
 
 impl Agent for TrainAgent {
     fn act<A: super::Action>(&mut self, obs: &Obs) -> Option<A> {
+        self.send_obs::<A>(obs);
+        if self.obs_remaining[self.iremaining].load(Ordering::SeqCst) != 0 {
+            panic!("TrainAgent::act called before all agents have received observations. This is not allowed. If you have multiple agents, use the `act_async` method to pass observations to each agent before making any blocking calls.");
+        }
+        match self.action.recv() {
+            Ok(action) => {
+                self.obs_remaining[self.iremaining].store(self.iremaining, Ordering::SeqCst);
+                self.iremaining = 1 - self.iremaining;
+                self.observation_sent = false;
+                Some(A::from_u64(action))
+            }
+            Err(_) => None,
+        }
+    }
+
+    fn act_async<A: super::Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
+        self.send_obs::<A>(obs);
+        self.observation_sent = false;
+        self.iremaining = 1 - self.iremaining;
+        ActionReceiver {
+            inner: InnerActionReceiver::Receiver {
+                receiver: self.action.clone(),
+                observations_remaining: self.obs_remaining[1 - self.iremaining].clone(),
+                agent_count: self.agent_count,
+            },
+        }
+    }
+
+    fn game_over(&mut self, score: f32) {
+        let obs = Observation {
+            features: CompactFeatures {
+                counts: vec![0; self.entity_names.len()],
+                data: vec![],
+            },
+            ids: vec![None],
+            actions: vec![None],
+            done: true,
+            reward: score - self.score.unwrap_or(0.0),
+            metrics: Default::default(),
+        };
+        self.score = None;
+        let _ = self.observation.send(obs);
+    }
+}
+
+impl TrainAgent {
+    fn send_obs<A: super::Action>(&mut self, obs: &Obs) {
+        assert!(
+            self.observation_sent == false,
+            "Observation already sent, await the next action before sending a new observation."
+        );
+        self.obs_remaining[self.iremaining].fetch_sub(1, Ordering::SeqCst);
+
         let mut data = vec![];
         let mut counts = vec![];
         for name in &self.entity_names {
@@ -96,27 +164,7 @@ impl Agent for TrainAgent {
             reward: obs.score - last_score,
             metrics: Default::default(),
         };
-        self.observation.send(observation).ok()?;
-        match self.action.recv() {
-            Ok(action) => Some(A::from_u64(action)),
-            Err(_) => None,
-        }
-    }
-
-    fn game_over(&mut self) {
-        let obs = Observation {
-            features: CompactFeatures {
-                counts: vec![0; self.entity_names.len()],
-                data: vec![],
-            },
-            ids: vec![None],
-            actions: vec![None],
-            done: true,
-            reward: 0.0,
-            metrics: Default::default(),
-        };
-        self.score = None;
-        let _ = self.observation.send(obs);
+        let _ = self.observation.send(observation);
     }
 }
 
@@ -161,7 +209,10 @@ impl TrainEnvBuilder {
             observation: vec![],
         };
         let mut agents = vec![];
-
+        let obs_remaining = [
+            Arc::new(AtomicUsize::new(num_agents)),
+            Arc::new(AtomicUsize::new(num_agents)),
+        ];
         for _ in 0..num_agents {
             let (action_tx, action_rx) = bounded(1);
             let (observation_tx, observation_rx) = bounded(1);
@@ -173,6 +224,10 @@ impl TrainEnvBuilder {
                 observation: observation_tx,
                 entity_names,
                 score: None,
+                obs_remaining: obs_remaining.clone(),
+                iremaining: 0,
+                observation_sent: false,
+                agent_count: num_agents,
             });
         }
 
@@ -197,6 +252,10 @@ impl TrainEnvBuilder {
                 observation: observation_tx,
                 entity_names,
                 score: None,
+                obs_remaining: [Arc::new(AtomicUsize::new(1)), Arc::new(AtomicUsize::new(1))],
+                iremaining: 0,
+                observation_sent: false,
+                agent_count: 1,
             },
         )
     }

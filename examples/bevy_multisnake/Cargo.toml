@@ -1,12 +1,12 @@
 [package]
-name = "bevy-snake-enn"
+name = "bevy-multisnake"
 version = "0.1.0"
 authors = ["Clemens Winter <clemenswinter1@gmail.com>", "Marcus Buffett <marcusbuffett@me.com>"]
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-name = "bevy_snake_enn"
+name = "bevy_multisnake"
 
 [dependencies]
 bevy = "0.7.0"
