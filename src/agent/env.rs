@@ -84,8 +84,8 @@ impl Environment for TrainAgentEnv {
 }
 
 impl Agent for TrainAgent {
-    fn act<A: super::Action>(&mut self, obs: &Obs) -> Option<A> {
-        self.send_obs::<A>(obs);
+    fn act_raw(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
+        self.send_obs_raw(action, obs);
         if self.obs_remaining[self.iremaining].load(Ordering::SeqCst) != 0 {
             panic!("TrainAgent::act called before all agents have received observations. This is not allowed. If you have multiple agents, use the `act_async` method to pass observations to each agent before making any blocking calls.");
         }
@@ -94,14 +94,14 @@ impl Agent for TrainAgent {
                 self.obs_remaining[self.iremaining].store(self.iremaining, Ordering::SeqCst);
                 self.iremaining = 1 - self.iremaining;
                 self.observation_sent = false;
-                Some(A::from_u64(action))
+                Some(action)
             }
             Err(_) => None,
         }
     }
 
-    fn act_async<A: super::Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
-        self.send_obs::<A>(obs);
+    fn act_async_raw(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
+        self.send_obs_raw(action, obs);
         self.observation_sent = false;
         self.iremaining = 1 - self.iremaining;
         ActionReceiver {
@@ -109,6 +109,7 @@ impl Agent for TrainAgent {
                 receiver: self.action.clone(),
                 observations_remaining: self.obs_remaining[1 - self.iremaining].clone(),
                 agent_count: self.agent_count,
+                phantom: Default::default(),
             },
         }
     }
@@ -131,7 +132,7 @@ impl Agent for TrainAgent {
 }
 
 impl TrainAgent {
-    fn send_obs<A: super::Action>(&mut self, obs: &Obs) {
+    fn send_obs_raw(&mut self, _action: &str, obs: &Obs) {
         assert!(
             self.observation_sent == false,
             "Observation already sent, await the next action before sending a new observation."
@@ -158,7 +159,7 @@ impl TrainAgent {
             ids: vec![None],
             actions: vec![Some(ActionMask::DenseCategorical {
                 actors: vec![0],
-                mask: Some(vec![true; A::num_actions() as usize]),
+                mask: None,
             })],
             done: obs.done,
             reward: obs.score - last_score,

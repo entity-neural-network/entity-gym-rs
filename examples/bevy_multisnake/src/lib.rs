@@ -8,7 +8,7 @@ use ai::{snake_movement_agent, Players};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{Action, Agent, AnyAgent};
+use entity_gym_rs::agent::{Action, Agent, RandomAgent, RogueNetAgent};
 use rand::prelude::{random, SmallRng};
 use rand::{Rng, SeedableRng};
 
@@ -385,8 +385,8 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
         .insert_resource(Config { easy_mode })
         .insert_resource(Pause(0))
         .insert_non_send_resource(match agent_path {
-            Some(path) => Players([None, Some(AnyAgent::rogue_net(&path))]),
-            None => Players([None, Some(AnyAgent::random_seeded(1))]),
+            Some(path) => Players([None, Some(Box::new(RogueNetAgent::load(path)))]),
+            None => Players([None, Some(Box::new(RandomAgent::from_seed(1)))]),
         })
         .insert_resource(FoodTimer(Some(4)))
         .insert_resource(SmallRng::seed_from_u64(0))
@@ -417,7 +417,7 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
         .run();
 }
 
-pub fn run_headless(agents: [AnyAgent; 2], seed: u64) {
+pub fn run_headless(agents: [Box<dyn Agent>; 2], seed: u64) {
     let [a1, a2] = agents;
     App::new()
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))

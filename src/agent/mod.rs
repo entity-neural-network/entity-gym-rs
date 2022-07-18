@@ -1,5 +1,4 @@
 mod action;
-mod any_agent;
 mod env;
 mod featurizable;
 mod obs;
@@ -10,7 +9,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 pub use action::Action;
-pub use any_agent::AnyAgent;
 use crossbeam_channel::Receiver;
 pub use entity_gym_derive::*;
 pub use env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
@@ -20,10 +18,29 @@ pub use random_agent::RandomAgent;
 pub use rogue_net_agent::RogueNetAgent;
 
 pub trait Agent {
+    fn act_raw(&mut self, action: &str, num_actions: u64, obs: &Obs) -> Option<u64>;
+    #[must_use]
+    fn act_async_raw(&mut self, action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64>;
+    fn game_over(&mut self, _score: f32) {}
+}
+
+pub trait AgentOps {
     fn act<A: Action>(&mut self, obs: &Obs) -> Option<A>;
     #[must_use]
     fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A>;
-    fn game_over(&mut self, _score: f32) {}
+}
+
+impl AgentOps for dyn Agent {
+    fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
+        self.act_raw(A::name(), A::num_actions(), obs)
+            .map(A::from_u64)
+    }
+
+    #[must_use]
+    fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
+        let receiver = self.act_async_raw(A::name(), A::num_actions(), obs);
+        unsafe { std::mem::transmute::<ActionReceiver<u64>, ActionReceiver<A>>(receiver) }
+    }
 }
 
 pub struct ActionReceiver<A> {
@@ -35,17 +52,19 @@ enum InnerActionReceiver<A> {
         receiver: Receiver<u64>,
         observations_remaining: Arc<AtomicUsize>,
         agent_count: usize,
+        phantom: std::marker::PhantomData<A>,
     },
-    Value(A),
+    Value(u64),
 }
 
-impl<A: Action> ActionReceiver<A> {
-    pub fn rcv(self) -> Option<A> {
+impl<A> ActionReceiver<A> {
+    pub fn rcv_raw(self) -> Option<u64> {
         match self.inner {
             InnerActionReceiver::Receiver {
                 receiver,
                 observations_remaining,
                 agent_count,
+                ..
             } => {
                 let remaining = observations_remaining.load(Ordering::SeqCst);
                 if remaining != 0 && remaining != agent_count {
@@ -53,13 +72,20 @@ impl<A: Action> ActionReceiver<A> {
                 }
                 let act = receiver.recv();
                 observations_remaining.store(agent_count, Ordering::SeqCst);
-                act.ok().map(A::from_u64)
+                act.ok()
             }
-            InnerActionReceiver::Value(action) => Some(action),
+            InnerActionReceiver::Value(value) => Some(value),
         }
     }
 
-    pub fn value(val: A) -> ActionReceiver<A> {
+    pub fn rcv(self) -> Option<A>
+    where
+        A: Action,
+    {
+        self.rcv_raw().map(A::from_u64)
+    }
+
+    pub(crate) fn value(val: u64) -> ActionReceiver<A> {
         ActionReceiver {
             inner: InnerActionReceiver::Value(val),
         }

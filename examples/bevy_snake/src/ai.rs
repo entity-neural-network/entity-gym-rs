@@ -1,6 +1,6 @@
 use bevy::app::AppExit;
 use bevy::prelude::{EventWriter, NonSendMut, Query, Res};
-use entity_gym_rs::agent::{Agent, AnyAgent, Featurizable, Obs};
+use entity_gym_rs::agent::{Agent, AgentOps, Featurizable, Obs};
 
 use crate::{Direction, Position, SnakeHead, SnakeSegments};
 
@@ -29,7 +29,7 @@ pub(crate) fn snake_movement_agent(
     }
 }
 
-pub struct Player(pub AnyAgent);
+pub struct Player(pub Box<dyn Agent>);
 
 #[derive(Featurizable)]
 pub struct Head {

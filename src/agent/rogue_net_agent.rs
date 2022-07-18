@@ -1,7 +1,7 @@
 use ndarray::Array2;
 use rogue_net::{load_checkpoint, RogueNet};
 
-use super::{Action, Obs};
+use super::Obs;
 use super::{ActionReceiver, Agent};
 
 pub struct RogueNetAgent {
@@ -16,7 +16,7 @@ impl RogueNetAgent {
 }
 
 impl Agent for RogueNetAgent {
-    fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
+    fn act_raw(&mut self, _action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
         let entities = obs
             .entities
             .iter()
@@ -28,10 +28,10 @@ impl Agent for RogueNetAgent {
             })
             .collect();
         let (_probs, acts) = self.net.forward(&entities);
-        Some(A::from_u64(acts[0]))
+        Some(acts[0])
     }
 
-    fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
-        ActionReceiver::value(self.act(obs).unwrap())
+    fn act_async_raw(&mut self, action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
+        ActionReceiver::value(self.act_raw(action, num_actions, obs).unwrap())
     }
 }
