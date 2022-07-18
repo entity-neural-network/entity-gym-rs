@@ -1,0 +1,14 @@
+[package]
+name = "entity-gym-rs-derive"
+version = "0.1.0"
+authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+proc-macro-error = { version = "1", default-features = false }

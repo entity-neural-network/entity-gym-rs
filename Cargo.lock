@@ -1373,6 +1373,7 @@ dependencies = [
  "clap",
  "crossbeam",
  "crossbeam-channel",
+ "entity-gym-rs-derive",
  "lazy_static",
  "maplit",
  "ndarray",
@@ -1382,6 +1383,16 @@ dependencies = [
  "rand",
  "rogue_net",
  "rustc-hash",
+]
+
+[[package]]
+name = "entity-gym-rs-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

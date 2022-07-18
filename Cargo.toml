@@ -31,6 +31,8 @@ lazy_static = "1.4"
 
 crossbeam-channel = "0.5"
 
+entity-gym-rs-derive = {path = "entity-gym-rs-derive"}
+
 
 [features]
 python = ["pyo3", "numpy", "ragged-buffer/python"]

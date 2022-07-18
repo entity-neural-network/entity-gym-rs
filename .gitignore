@@ -1,5 +1,4 @@
-/target
-examples/*/target
+target
 __pycache__
 /wandb
 examples/*/runs
