@@ -1,6 +1,7 @@
 use bevy::app::AppExit;
 use bevy::prelude::{EventWriter, NonSendMut, Query, Res};
 use entity_gym_rs::agent::{Action, Agent, AnyAgent, Featurizable, Obs};
+use entity_gym_rs::Featurizable;
 
 use crate::{Direction, Pause, Player, Position, SnakeHead, SnakeSegments};
 
@@ -84,81 +85,22 @@ impl Action for Move {
     }
 }
 
+#[derive(Featurizable)]
 pub struct Head {
     x: i32,
     y: i32,
     is_enemy: bool,
 }
 
-impl Featurizable for Head {
-    fn num_feats() -> usize {
-        3
-    }
-
-    fn feature_names() -> &'static [&'static str] {
-        &["x", "y", "is_enemy"]
-    }
-
-    fn featurize(&self) -> Vec<f32> {
-        vec![
-            self.x as f32,
-            self.y as f32,
-            if self.is_enemy { 1. } else { 0. },
-        ]
-    }
-
-    fn name() -> &'static str {
-        "Head"
-    }
-}
-
+#[derive(Featurizable)]
 pub struct SnakeSegment {
     x: i32,
     y: i32,
     is_enemy: bool,
 }
 
-impl Featurizable for SnakeSegment {
-    fn num_feats() -> usize {
-        3
-    }
-
-    fn feature_names() -> &'static [&'static str] {
-        &["x", "y", "is_enemy"]
-    }
-
-    fn featurize(&self) -> Vec<f32> {
-        vec![
-            self.x as f32,
-            self.y as f32,
-            if self.is_enemy { 1. } else { 0. },
-        ]
-    }
-
-    fn name() -> &'static str {
-        "SnakeSegment"
-    }
-}
-
+#[derive(Featurizable)]
 pub struct Food {
     x: i32,
     y: i32,
-}
-
-impl Featurizable for Food {
-    fn num_feats() -> usize {
-        2
-    }
-
-    fn feature_names() -> &'static [&'static str] {
-        &["x", "y"]
-    }
-
-    fn featurize(&self) -> Vec<f32> {
-        vec![self.x as f32, self.y as f32]
-    }
-
-    fn name() -> &'static str {
-        "Food"
-    }
 }
