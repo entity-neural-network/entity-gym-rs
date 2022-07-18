@@ -46,7 +46,7 @@ fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: 
         ),
     }
 }
-
+    
 #[pymodule]
 fn bevy_snake_enn(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create_env, m)?)?;

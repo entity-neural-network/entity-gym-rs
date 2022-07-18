@@ -86,12 +86,13 @@ impl Environment for TrainAgentEnv {
 impl Agent for TrainAgent {
     fn act_raw(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
         self.send_obs_raw(action, obs);
-        if self.obs_remaining[self.iremaining].load(Ordering::SeqCst) != 0 {
-            panic!("TrainAgent::act called before all agents have received observations. This is not allowed. If you have multiple agents, use the `act_async` method to pass observations to each agent before making any blocking calls.");
+        let remaining = self.obs_remaining[self.iremaining].load(Ordering::SeqCst);
+        if remaining != 0 && (remaining != self.agent_count || self.agent_count == 1) {
+            panic!("TrainAgent::act called before all agents have received observations. This is not allowed. If you have multiple agents, call the `act_async` on every agent before awaiting any actions.");
         }
         match self.action.recv() {
             Ok(action) => {
-                self.obs_remaining[self.iremaining].store(self.iremaining, Ordering::SeqCst);
+                self.obs_remaining[self.iremaining].store(self.agent_count, Ordering::SeqCst);
                 self.iremaining = 1 - self.iremaining;
                 self.observation_sent = false;
                 Some(action)

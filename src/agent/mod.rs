@@ -1,5 +1,5 @@
 mod action;
-mod env;
+mod train_env;
 mod featurizable;
 mod obs;
 mod random_agent;
@@ -11,7 +11,7 @@ use std::sync::Arc;
 pub use action::Action;
 use crossbeam_channel::Receiver;
 pub use entity_gym_derive::*;
-pub use env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
+pub use train_env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 pub use featurizable::Featurizable;
 pub use obs::Obs;
 pub use random_agent::RandomAgent;
@@ -67,7 +67,7 @@ impl<A> ActionReceiver<A> {
                 ..
             } => {
                 let remaining = observations_remaining.load(Ordering::SeqCst);
-                if remaining != 0 && remaining != agent_count {
+                if remaining != 0 && (remaining != agent_count || agent_count == 1) {
                     panic!("TrainAgent::act called before all agents have received observations. This is not allowed. If you have multiple agents, call the `act_async` on every agent before awaiting any actions.");
                 }
                 let act = receiver.recv();
