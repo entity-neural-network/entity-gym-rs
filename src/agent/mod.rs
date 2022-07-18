@@ -12,6 +12,7 @@ use std::sync::Arc;
 pub use action::Action;
 pub use any_agent::AnyAgent;
 use crossbeam_channel::Receiver;
+pub use entity_gym_derive::*;
 pub use env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 pub use featurizable::Featurizable;
 pub use obs::Obs;

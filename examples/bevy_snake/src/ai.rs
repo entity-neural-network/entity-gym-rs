@@ -1,7 +1,6 @@
 use bevy::app::AppExit;
 use bevy::prelude::{EventWriter, NonSendMut, Query, Res};
-use entity_gym_rs::agent::{Action, Agent, AnyAgent, Featurizable, Obs};
-use entity_gym_rs::Featurizable;
+use entity_gym_rs::agent::{Agent, AnyAgent, Featurizable, Obs};
 
 use crate::{Direction, Position, SnakeHead, SnakeSegments};
 
@@ -18,9 +17,9 @@ pub(crate) fn snake_movement_agent(
             .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
             .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
             .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
-        let action = player.0.act::<Move>(&obs);
+        let action = player.0.act::<Direction>(&obs);
         match action {
-            Some(Move(dir)) => {
+            Some(dir) => {
                 if dir != head.direction.opposite() {
                     head.direction = dir;
                 }
@@ -31,41 +30,6 @@ pub(crate) fn snake_movement_agent(
 }
 
 pub struct Player(pub AnyAgent);
-
-pub struct Move(Direction);
-
-impl Action for Move {
-    fn from_u64(index: u64) -> Self {
-        match index {
-            0 => Move(Direction::Up),
-            1 => Move(Direction::Down),
-            2 => Move(Direction::Left),
-            3 => Move(Direction::Right),
-            _ => panic!("Invalid direction index"),
-        }
-    }
-
-    fn to_u64(&self) -> u64 {
-        match self.0 {
-            Direction::Up => 0,
-            Direction::Down => 1,
-            Direction::Left => 2,
-            Direction::Right => 3,
-        }
-    }
-
-    fn num_actions() -> u64 {
-        4
-    }
-
-    fn name() -> &'static str {
-        "move"
-    }
-
-    fn labels() -> &'static [&'static str] {
-        &["up", "down", "left", "right"]
-    }
-}
 
 #[derive(Featurizable)]
 pub struct Head {

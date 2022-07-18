@@ -1,7 +1,6 @@
 pub mod agent;
 mod examples;
 pub mod low_level;
-pub use entity_gym_rs_derive::*;
 
 #[cfg(feature = "python")]
 mod python {

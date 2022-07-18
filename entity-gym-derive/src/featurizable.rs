@@ -1,11 +1,9 @@
 use proc_macro2::TokenStream;
-use proc_macro_error::{abort, proc_macro_error};
+use proc_macro_error::abort;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Field, Type};
 
-#[proc_macro_error]
-#[proc_macro_derive(Featurizable)]
-pub fn derive_featurizable(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
 

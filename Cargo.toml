@@ -31,7 +31,7 @@ lazy_static = "1.4"
 
 crossbeam-channel = "0.5"
 
-entity-gym-rs-derive = {path = "entity-gym-rs-derive"}
+entity-gym-derive = {path = "entity-gym-derive"}
 
 
 [features]

@@ -8,7 +8,7 @@ use ai::{snake_movement_agent, Player};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{Agent, AnyAgent};
+use entity_gym_rs::agent::{Action, Agent, AnyAgent};
 use rand::prelude::{random, SmallRng};
 use rand::{Rng, SeedableRng};
 
@@ -62,7 +62,7 @@ struct Food;
 
 struct FoodTimer(u32);
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug, Action)]
 enum Direction {
     Left,
     Up,

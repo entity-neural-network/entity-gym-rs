@@ -26,7 +26,7 @@ impl<'a, T: Featurizable> Featurizable for &'a T {
 mod test {
     use super::*;
 
-    use entity_gym_rs_derive::Featurizable;
+    use entity_gym_derive::Featurizable;
 
     #[derive(Featurizable)]
     struct Pos {
