@@ -284,9 +284,31 @@ fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>) {
     }
 }
 
+pub fn base_app(app: &mut App, seed: u64, timestep: Option<f64>) -> &mut App {
+    let mut main_system = SystemSet::new()
+        .with_system(snake_movement_agent)
+        .with_system(snake_movement)
+        .with_system(snake_eating.after(snake_movement))
+        .with_system(snake_growth.after(snake_eating))
+        .with_system(food_spawner.after(snake_growth));
+    if let Some(timestep) = timestep {
+        main_system = main_system.with_run_criteria(FixedTimestep::step(timestep));
+    }
+    app.insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+        .insert_resource(FoodTimer(7))
+        .insert_resource(SmallRng::seed_from_u64(seed))
+        .add_startup_system(setup_camera)
+        .add_startup_system(spawn_snake)
+        .insert_resource(SnakeSegments::default())
+        .insert_resource(LastTailPosition::default())
+        .add_event::<GrowthEvent>()
+        .add_event::<GameOverEvent>()
+        .add_system_set(main_system)
+        .add_system(game_over.after(snake_movement))
+}
+
 pub fn run(agent_path: Option<String>) {
-    App::new()
-        .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+    base_app(&mut App::new(), 0, Some(0.150))
         .insert_resource(WindowDescriptor {
             title: "Snake!".to_string(),
             width: 500.0,
@@ -297,25 +319,7 @@ pub fn run(agent_path: Option<String>) {
             Some(path) => Player(Box::new(RogueNetAgent::load(path))),
             None => Player(Box::new(RandomAgent::default())),
         })
-        .insert_resource(FoodTimer(7))
-        .insert_resource(SmallRng::seed_from_u64(0))
-        .add_startup_system(setup_camera)
-        .add_startup_system(spawn_snake)
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
-        .add_event::<GrowthEvent>()
         .add_system(snake_movement_input.before(snake_movement))
-        .add_event::<GameOverEvent>()
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(0.150))
-                .with_system(snake_movement_agent)
-                .with_system(snake_movement)
-                .with_system(snake_eating.after(snake_movement))
-                .with_system(snake_growth.after(snake_eating))
-                .with_system(food_spawner.after(snake_growth)),
-        )
-        .add_system(game_over.after(snake_movement))
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
             SystemSet::new()
@@ -327,29 +331,11 @@ pub fn run(agent_path: Option<String>) {
 }
 
 pub fn run_headless(agent: Box<dyn Agent>, seed: u64) {
-    App::new()
+    base_app(&mut App::new(), seed, None)
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
         )))
         .insert_non_send_resource(Player(agent))
-        .insert_resource(FoodTimer(7))
-        .add_startup_system(setup_camera)
-        .add_startup_system(spawn_snake)
-        .insert_resource(SmallRng::seed_from_u64(seed))
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
-        .add_event::<GrowthEvent>()
-        //.add_system(snake_movement_input.before(snake_movement))
-        .add_event::<GameOverEvent>()
-        .add_system_set(
-            SystemSet::new()
-                .with_system(snake_movement_agent)
-                .with_system(snake_movement.after(snake_movement_agent))
-                .with_system(snake_eating.after(snake_movement))
-                .with_system(snake_growth.after(snake_eating))
-                .with_system(food_spawner.after(snake_growth)),
-        )
-        .add_system(game_over.after(snake_movement))
         .add_plugins(MinimalPlugins)
         .run();
 }

@@ -373,9 +373,35 @@ fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>, pause
     }
 }
 
-pub fn run(agent_path: Option<String>, easy_mode: bool) {
-    App::new()
+pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
+    let mut main_system = 
+            SystemSet::new()
+                .with_system(snake_movement_agent)
+                .with_system(snake_movement.after(snake_movement_agent))
+                .with_system(snake_eating.after(snake_movement))
+                .with_system(snake_growth.after(snake_eating))
+                .with_system(food_spawner.after(snake_growth));
+    if let Some(timstep) = timstep {
+        main_system = main_system.with_run_criteria(FixedTimestep::step(timstep));
+    }
+    app
         .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+        .insert_resource(Pause(0))
+        .insert_resource(FoodTimer(Some(4)))
+        .add_startup_system(setup_camera)
+        .add_startup_system(spawn_snake)
+        .insert_resource(SmallRng::seed_from_u64(seed))
+        .insert_resource(SnakeSegments::default())
+        .insert_resource(LastTailPosition::default())
+        .add_event::<GrowthEvent>()
+        .add_event::<GameOverEvent>()
+        .add_system_set(main_system)
+        .add_system(game_over.after(snake_movement))
+}
+
+
+pub fn run(agent_path: Option<String>, easy_mode: bool) {
+    base_app(&mut App::new(), 0, Some(0.150))
         .insert_resource(WindowDescriptor {
             title: "Snake!".to_string(),
             width: 500.0,
@@ -383,30 +409,11 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
             ..default()
         })
         .insert_resource(Config { easy_mode })
-        .insert_resource(Pause(0))
         .insert_non_send_resource(match agent_path {
             Some(path) => Players([None, Some(Box::new(RogueNetAgent::load(path)))]),
             None => Players([None, Some(Box::new(RandomAgent::from_seed(1)))]),
         })
-        .insert_resource(FoodTimer(Some(4)))
-        .insert_resource(SmallRng::seed_from_u64(0))
-        .add_startup_system(setup_camera)
-        .add_startup_system(spawn_snake)
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
-        .add_event::<GrowthEvent>()
         .add_system(snake_movement_input.before(snake_movement))
-        .add_event::<GameOverEvent>()
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(0.150))
-                .with_system(snake_movement_agent)
-                .with_system(snake_movement)
-                .with_system(snake_eating.after(snake_movement))
-                .with_system(snake_growth.after(snake_eating))
-                .with_system(food_spawner.after(snake_growth)),
-        )
-        .add_system(game_over.after(snake_movement))
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
             SystemSet::new()
@@ -419,31 +426,12 @@ pub fn run(agent_path: Option<String>, easy_mode: bool) {
 
 pub fn run_headless(agents: [Box<dyn Agent>; 2], seed: u64) {
     let [a1, a2] = agents;
-    App::new()
-        .insert_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+    base_app(&mut App::new(), seed, None)
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
         )))
         .insert_resource(Config { easy_mode: false })
-        .insert_resource(Pause(0))
         .insert_non_send_resource(Players([Some(a1), Some(a2)]))
-        .insert_resource(FoodTimer(Some(4)))
-        .add_startup_system(setup_camera)
-        .add_startup_system(spawn_snake)
-        .insert_resource(SmallRng::seed_from_u64(seed))
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
-        .add_event::<GrowthEvent>()
-        .add_event::<GameOverEvent>()
-        .add_system_set(
-            SystemSet::new()
-                .with_system(snake_movement_agent)
-                .with_system(snake_movement.after(snake_movement_agent))
-                .with_system(snake_eating.after(snake_movement))
-                .with_system(snake_growth.after(snake_eating))
-                .with_system(food_spawner.after(snake_growth)),
-        )
-        .add_system(game_over.after(snake_movement))
         .add_plugins(MinimalPlugins)
         .run();
 }
