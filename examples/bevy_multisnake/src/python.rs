@@ -3,7 +3,7 @@ use std::thread;
 
 use crate::ai::{self};
 use crate::Direction;
-use entity_gym_rs::agent::{AnyAgent, TrainAgent, TrainAgentEnv, TrainEnvBuilder};
+use entity_gym_rs::agent::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
 use entity_gym_rs::low_level::VecEnv;
 use pyo3::prelude::*;
@@ -35,8 +35,8 @@ fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: 
         env: VecEnv::new(
             Arc::new(move |seed| {
                 let (env, mut agents) = env(config.clone());
-                let a1 = AnyAgent::train(agents.pop().unwrap());
-                let a0 = AnyAgent::train(agents.pop().unwrap());
+                let a1 = Box::new(agents.pop().unwrap());
+                let a0 = Box::new(agents.pop().unwrap());
                 thread::spawn(move || {
                     super::run_headless([a0, a1], seed);
                 });

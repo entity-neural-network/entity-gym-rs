@@ -4,7 +4,6 @@ use bevy_snake_enn::python::{env, Config};
 #[cfg(feature = "python")]
 fn main() {
     use bevy_snake_enn::run_headless;
-    use entity_gym_rs::agent::AnyAgent;
     use entity_gym_rs::low_level::VecEnv;
     use ragged_buffer::ragged_buffer::RaggedBuffer;
     //use std::hint::black_box;
@@ -18,7 +17,7 @@ fn main() {
         Arc::new(move |seed| {
             let (env, agent) = env(config.clone());
             thread::spawn(move || {
-                run_headless(AnyAgent::train(agent), seed);
+                run_headless(Box::new(agent), seed);
             });
             env
         }),
