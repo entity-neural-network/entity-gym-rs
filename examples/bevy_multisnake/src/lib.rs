@@ -305,8 +305,8 @@ fn game_over(
         for (i, player) in players.0.iter_mut().enumerate() {
             if let Some(player) = player {
                 let score = match winner {
-                    Some(winner) if winner.index() == i => 100.0,
-                    _ => segments_res.0[i].len() as f32,
+                    Some(winner) if winner.index() == i => 1.0,
+                    _ => segments_res.0[i].len() as f32 * 0.01,
                 };
                 let metrics = vec![
                     (game_over_reason_str.to_string(), 1.0),
