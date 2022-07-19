@@ -19,7 +19,7 @@ pub(crate) fn snake_movement_agent(
     let mut head_actions = vec![];
     for (head, head_pos, player) in heads.iter_mut() {
         if let Some(agent) = &mut players.0[player.index()] {
-            let obs = Obs::new(segments_res.0[player.index()].len() as f32)
+            let obs = Obs::new(segments_res.0[player.index()].len() as f32 * 0.1)
                 .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
                 .entities([head_pos].iter().map(|p| Head {
                     x: p.x,
