@@ -413,16 +413,8 @@ pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: b
             height: 500.0,
             ..default()
         })
-        .insert_resource(Config { easy_mode })
-        .insert_resource(Pause(0))
         .insert_non_send_resource(Players([player, Some(opponent)]))
-        .insert_resource(FoodTimer(Some(4)))
-        .insert_resource(SmallRng::seed_from_u64(0))
-        .add_startup_system(setup_camera)
-        .add_startup_system(spawn_snake)
-        .insert_resource(SnakeSegments::default())
-        .insert_resource(LastTailPosition::default())
-        .add_event::<GrowthEvent>()
+        .insert_resource(Config { easy_mode })
         .add_system(snake_movement_input.before(snake_movement))
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
