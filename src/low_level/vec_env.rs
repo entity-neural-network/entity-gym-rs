@@ -239,6 +239,7 @@ impl VecEnvInner {
                             for i in 0..obs.len() {
                                 onew[i].reward = obs[i].reward;
                                 onew[i].done = obs[i].done;
+                                onew[i].metrics.extend(obs[i].metrics.clone());
                             }
                             obs = onew;
                         }

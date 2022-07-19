@@ -3,15 +3,16 @@ import numpy.typing as npt
 import numpy as np
 from ragged_buffer import RaggedBufferI64, RaggedBufferF32, RaggedBufferBool
 from entity_gym.env import (
-    VecEnv,
-    Entity,
+    ActionName,
     ActionSpace,
     CategoricalActionSpace,
-    SelectEntityActionSpace,
+    Entity,
+    Metric,
     ObsSpace,
-    VecObs,
-    ActionName,
+    SelectEntityActionSpace,
     VecCategoricalActionMask,
+    VecEnv,
+    VecObs,
     VecSelectEntityActionMask,
 )
 from .entity_gym_rs import multisnake
@@ -57,7 +58,7 @@ def to_vec_obs(x) -> VecObs:
         action_masks=action_masks,
         reward=x.reward,
         done=x.done,
-        metrics={},
+        metrics={k: Metric(*m) for k, m in x.metrics.items()},
     )
 
 

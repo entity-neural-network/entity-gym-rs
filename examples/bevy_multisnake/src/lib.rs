@@ -74,7 +74,14 @@ struct SnakeHead {
     direction: Direction,
 }
 
-struct GameOverEvent(Option<Player>);
+struct GameOverEvent(Option<Player>, GameOverReason);
+
+enum GameOverReason {
+    HeadCollision,
+    MaxLengthReached,
+    SnakeCollision,
+    WallCollision,
+}
 
 struct GrowthEvent(Player);
 
@@ -221,10 +228,16 @@ fn snake_movement(
             || head_pos.x as u32 >= ARENA_WIDTH
             || head_pos.y as u32 >= ARENA_HEIGHT
         {
-            game_over_writer.send(GameOverEvent(Some(p.opponent())));
+            game_over_writer.send(GameOverEvent(
+                Some(p.opponent()),
+                GameOverReason::WallCollision,
+            ));
         }
         if all_segment_positions.contains(&head_pos) {
-            game_over_writer.send(GameOverEvent(Some(p.opponent())));
+            game_over_writer.send(GameOverEvent(
+                Some(p.opponent()),
+                GameOverReason::SnakeCollision,
+            ));
         }
         head_positions.push(*head_pos);
         segment_positions
@@ -236,7 +249,7 @@ fn snake_movement(
         last_tail_position.0[p.index()] = Some(*segment_positions.last().unwrap());
     }
     if head_positions[0] == head_positions[1] {
-        game_over_writer.send(GameOverEvent(None));
+        game_over_writer.send(GameOverEvent(None, GameOverReason::HeadCollision));
     }
 }
 
@@ -273,7 +286,13 @@ fn game_over(
     food: Query<Entity, With<Food>>,
     segments: Query<Entity, With<SnakeSegment>>,
 ) {
-    if let Some(GameOverEvent(winner)) = reader.iter().next() {
+    if let Some(GameOverEvent(winner, reason)) = reader.iter().next() {
+        let game_over_reason_str = match reason {
+            GameOverReason::WallCollision => "game_over/wall_collision",
+            GameOverReason::SnakeCollision => "game_over/snake_collision",
+            GameOverReason::HeadCollision => "game_over/head_collision",
+            GameOverReason::MaxLengthReached => "game_over/max_length_reached",
+        };
         pause.0 = 5;
         clear_color.0 = match winner {
             Some(winner) => SNAKE_SEGMENT_COLOR[winner.index()],
@@ -289,7 +308,11 @@ fn game_over(
                     Some(winner) if winner.index() == i => 100.0,
                     _ => segments_res.0[i].len() as f32,
                 };
-                player.game_over(score);
+                let metrics = vec![
+                    (game_over_reason_str.to_string(), 1.0),
+                    ("final_length".to_string(), segments_res.0[i].len() as f32),
+                ];
+                player.game_over_metrics(score, &metrics);
             }
         }
         spawn_snake(commands, segments_res, rng);
@@ -326,7 +349,10 @@ fn snake_growth(
     for growth in growth_reader.iter() {
         let player = growth.0;
         if segments[player.index()].len() == 10 {
-            game_over_writer.send(GameOverEvent(Some(player)));
+            game_over_writer.send(GameOverEvent(
+                Some(player),
+                GameOverReason::MaxLengthReached,
+            ));
         } else {
             segments[player.index()].push(spawn_segment(
                 &mut commands,

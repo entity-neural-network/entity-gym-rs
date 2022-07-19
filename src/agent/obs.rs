@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
+use rustc_hash::FxHashMap;
+
 use super::Featurizable;
 
 pub struct Obs {
     pub(crate) entities: HashMap<&'static str, (Vec<f32>, usize, usize)>,
     pub(crate) done: bool,
     pub(crate) score: f32,
+    pub(crate) metrics: FxHashMap<String, f32>,
 }
 
 impl Obs {
@@ -14,6 +17,7 @@ impl Obs {
             score,
             entities: Default::default(),
             done: false,
+            metrics: Default::default(),
         }
     }
 
@@ -26,6 +30,11 @@ impl Obs {
         }
         self.entities
             .insert(E::name(), (feats, count, E::num_feats()));
+        self
+    }
+
+    pub fn metric(mut self, name: &str, value: f32) -> Self {
+        self.metrics.insert(name.to_string(), value);
         self
     }
 

@@ -1,9 +1,9 @@
 mod action;
-mod train_env;
 mod featurizable;
 mod obs;
 mod random_agent;
 mod rogue_net_agent;
+mod train_agent;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -11,17 +11,18 @@ use std::sync::Arc;
 pub use action::Action;
 use crossbeam_channel::Receiver;
 pub use entity_gym_derive::*;
-pub use train_env::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 pub use featurizable::Featurizable;
 pub use obs::Obs;
 pub use random_agent::RandomAgent;
 pub use rogue_net_agent::RogueNetAgent;
+pub use train_agent::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 
 pub trait Agent {
     fn act_raw(&mut self, action: &str, num_actions: u64, obs: &Obs) -> Option<u64>;
     #[must_use]
     fn act_async_raw(&mut self, action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64>;
     fn game_over(&mut self, _score: f32) {}
+    fn game_over_metrics(&mut self, _score: f32, _metrics: &[(String, f32)]) {}
 }
 
 pub trait AgentOps {

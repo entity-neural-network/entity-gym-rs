@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 use numpy::{PyArray1, PyReadonlyArrayDyn, ToPyArray};
 use pyo3::prelude::*;
 use ragged_buffer::monomorphs::{RaggedBufferBool, RaggedBufferF32, RaggedBufferI64};
@@ -29,6 +31,9 @@ pub struct VecObs {
     pub reward: Py<PyArray1<f32>>,
     #[pyo3(get)]
     pub done: Py<PyArray1<bool>>,
+    // (count, sum, max, min)
+    #[pyo3(get)]
+    pub metrics: FxHashMap<String, (usize, f32, f32, f32)>,
 }
 
 #[pymethods]
@@ -213,6 +218,23 @@ impl PyVecEnv {
             .collect::<Vec<bool>>()
             .to_pyarray(py)
             .into();
+        let mut metrics = FxHashMap::<_, (usize, f32, f32, f32)>::default();
+        for o in obs.iter() {
+            for (k, &v) in o.metrics.iter() {
+                match metrics.entry(k) {
+                    Entry::Occupied(mut e) => {
+                        let (count, sum, min, max) = e.get_mut();
+                        *count += 1;
+                        *sum += v;
+                        *min = min.min(v);
+                        *max = max.max(v);
+                    }
+                    Entry::Vacant(e) => {
+                        e.insert((1, v, v, v));
+                    }
+                }
+            }
+        }
 
         VecObs {
             features,
@@ -224,6 +246,7 @@ impl PyVecEnv {
                 .collect(),
             reward,
             done,
+            metrics: metrics.into_iter().map(|(k, m)| (k.clone(), m)).collect(),
         }
     }
 }
