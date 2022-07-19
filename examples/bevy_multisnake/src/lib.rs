@@ -122,25 +122,29 @@ fn spawn_snake(
 ) {
     let mut ss = (0..2)
         .map(|p| {
-            vec![commands
-                .spawn_bundle(SpriteBundle {
-                    sprite: Sprite {
-                        color: HEAD_COLOR[p],
+            let half_width = ARENA_WIDTH / 2;
+            let player = if p == 0 { Player::Blue } else { Player::Red };
+            let x = rng.gen_range((half_width * p)..(half_width * (p + 1))) as i32;
+            let y = rng.gen_range(1..(ARENA_HEIGHT - 1)) as i32;
+            vec![
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        sprite: Sprite {
+                            color: HEAD_COLOR[p as usize],
+                            ..default()
+                        },
                         ..default()
-                    },
-                    ..default()
-                })
-                .insert(SnakeHead {
-                    direction: Direction::Up,
-                })
-                .insert(SnakeSegment)
-                .insert(Position {
-                    x: rng.gen_range(0..ARENA_WIDTH) as i32,
-                    y: rng.gen_range(0..ARENA_HEIGHT) as i32,
-                })
-                .insert(if p == 0 { Player::Blue } else { Player::Red })
-                .insert(Size::square(0.8))
-                .id()]
+                    })
+                    .insert(SnakeHead {
+                        direction: Direction::Up,
+                    })
+                    .insert(SnakeSegment)
+                    .insert(Position { x, y })
+                    .insert(player)
+                    .insert(Size::square(0.8))
+                    .id(),
+                spawn_segment(&mut commands, Position { x, y: y - 1 }, player),
+            ]
         })
         .collect::<Vec<_>>();
     let s2 = ss.pop().unwrap();
