@@ -15,6 +15,7 @@ use rand::{Rng, SeedableRng};
 const HEAD_COLOR: [Color; 2] = [Color::rgb(0.6, 0.6, 1.0), Color::rgb(1.0, 0.6, 0.6)];
 const FOOD_COLOR: Color = Color::rgb(1.0, 0.0, 1.0);
 const SNAKE_SEGMENT_COLOR: [Color; 2] = [Color::rgb(0.2, 0.2, 0.4), Color::rgb(0.4, 0.2, 0.2)];
+const BACKGROUND_COLOR: Color = Color::rgb(0.04, 0.04, 0.04);
 
 const ARENA_HEIGHT: u32 = 10;
 const ARENA_WIDTH: u32 = 10;
@@ -73,7 +74,7 @@ struct SnakeHead {
     direction: Direction,
 }
 
-struct GameOverEvent(Player);
+struct GameOverEvent(Option<Player>);
 
 struct GrowthEvent(Player);
 
@@ -182,6 +183,7 @@ fn snake_movement(
         .flatten()
         .map(|e| *positions.get_mut(*e).unwrap())
         .collect::<Vec<Position>>();
+    let mut head_positions = vec![];
     for (head_entity, head, p) in heads.iter_mut() {
         let segment_positions = segments[p.index()]
             .iter()
@@ -215,11 +217,12 @@ fn snake_movement(
             || head_pos.x as u32 >= ARENA_WIDTH
             || head_pos.y as u32 >= ARENA_HEIGHT
         {
-            game_over_writer.send(GameOverEvent(p.opponent()));
+            game_over_writer.send(GameOverEvent(Some(p.opponent())));
         }
         if all_segment_positions.contains(&head_pos) {
-            game_over_writer.send(GameOverEvent(p.opponent()));
+            game_over_writer.send(GameOverEvent(Some(p.opponent())));
         }
+        head_positions.push(*head_pos);
         segment_positions
             .iter()
             .zip(segments[p.index()].iter().skip(1))
@@ -227,6 +230,9 @@ fn snake_movement(
                 *positions.get_mut(*segment).unwrap() = *pos;
             });
         last_tail_position.0[p.index()] = Some(*segment_positions.last().unwrap());
+    }
+    if head_positions[0] == head_positions[1] {
+        game_over_writer.send(GameOverEvent(None));
     }
 }
 
@@ -265,14 +271,21 @@ fn game_over(
 ) {
     if let Some(GameOverEvent(winner)) = reader.iter().next() {
         pause.0 = 5;
-        clear_color.0 = SNAKE_SEGMENT_COLOR[winner.index()];
+        clear_color.0 = match winner {
+            Some(winner) => SNAKE_SEGMENT_COLOR[winner.index()],
+            None => BACKGROUND_COLOR,
+        };
         for ent in food.iter().chain(segments.iter()) {
             commands.entity(ent).despawn();
         }
         food_timer.0 = Some(4);
         for (i, player) in players.0.iter_mut().enumerate() {
             if let Some(player) = player {
-                player.game_over(segments_res.0[i].len() as f32);
+                let score = match winner {
+                    Some(winner) if winner.index() == i => 100.0,
+                    _ => segments_res.0[i].len() as f32,
+                };
+                player.game_over(score);
             }
         }
         spawn_snake(commands, segments_res, rng);
@@ -291,7 +304,7 @@ fn snake_eating(
         for (ent, food_pos) in food_positions.iter() {
             if food_pos == head_pos {
                 growth_writer.send(GrowthEvent(player));
-                clear_color.0 = Color::rgb(0.04, 0.04, 0.04);
+                clear_color.0 = BACKGROUND_COLOR;
                 commands.entity(ent).despawn();
                 food_timer.0 = Some(4);
             }
@@ -309,7 +322,7 @@ fn snake_growth(
     for growth in growth_reader.iter() {
         let player = growth.0;
         if segments[player.index()].len() == 10 {
-            game_over_writer.send(GameOverEvent(player));
+            game_over_writer.send(GameOverEvent(Some(player)));
         } else {
             segments[player.index()].push(spawn_segment(
                 &mut commands,
