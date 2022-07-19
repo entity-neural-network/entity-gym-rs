@@ -9,7 +9,7 @@ use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 use entity_gym_rs::agent::{Action, Agent, RandomAgent, RogueNetAgent};
-use rand::prelude::{random, SmallRng};
+use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
 
 const HEAD_COLOR: [Color; 2] = [Color::rgb(0.6, 0.6, 1.0), Color::rgb(1.0, 0.6, 0.6)];
@@ -363,12 +363,27 @@ fn position_translation(windows: Res<Windows>, mut q: Query<(&Position, &mut Tra
     }
 }
 
-fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>, pause: Res<Pause>) {
+fn food_spawner(
+    mut commands: Commands,
+    mut food_timer: ResMut<FoodTimer>,
+    pause: Res<Pause>,
+    mut rng: ResMut<SmallRng>,
+    segments: Query<(&SnakeSegment, &Position)>,
+) {
     if pause.0 > 0 {
         return;
     }
+
     if let Some(time) = &mut food_timer.0 {
         if *time == 0 {
+            let pos = loop {
+                let x = rng.gen_range(0..ARENA_WIDTH) as i32;
+                let y = rng.gen_range(0..ARENA_HEIGHT) as i32;
+                let pos = Position { x, y };
+                if !segments.iter().any(|(_, p)| *p == pos) {
+                    break pos;
+                }
+            };
             commands
                 .spawn_bundle(SpriteBundle {
                     sprite: Sprite {
@@ -378,10 +393,7 @@ fn food_spawner(mut commands: Commands, mut food_timer: ResMut<FoodTimer>, pause
                     ..default()
                 })
                 .insert(Food)
-                .insert(Position {
-                    x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
-                    y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
-                })
+                .insert(pos)
                 .insert(Size::square(0.8));
             food_timer.0 = None;
         } else {
