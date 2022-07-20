@@ -72,6 +72,7 @@ impl Size {
 #[derive(Component)]
 struct SnakeHead {
     direction: Direction,
+    last_direction: Direction,
 }
 
 struct GameOverEvent(Option<Player>, GameOverReason);
@@ -144,6 +145,7 @@ fn spawn_snake(
                     })
                     .insert(SnakeHead {
                         direction: Direction::Up,
+                        last_direction: Direction::Up,
                     })
                     .insert(SnakeSegment)
                     .insert(Position { x, y })
@@ -181,7 +183,7 @@ fn snake_movement(
     mut game_over_writer: EventWriter<GameOverEvent>,
     mut pause: ResMut<Pause>,
     segments: ResMut<SnakeSegments>,
-    mut heads: Query<(Entity, &SnakeHead, &Player)>,
+    mut heads: Query<(Entity, &mut SnakeHead, &Player)>,
     mut positions: Query<&mut Position>,
 ) {
     if pause.0 > 0 {
@@ -195,12 +197,13 @@ fn snake_movement(
         .map(|e| *positions.get_mut(*e).unwrap())
         .collect::<Vec<Position>>();
     let mut head_positions = vec![];
-    for (head_entity, head, p) in heads.iter_mut() {
+    for (head_entity, mut head, p) in heads.iter_mut() {
         let segment_positions = segments[p.index()]
             .iter()
             .map(|e| *positions.get_mut(*e).unwrap())
             .collect::<Vec<Position>>();
         let mut head_pos = positions.get_mut(head_entity).unwrap();
+        head.last_direction = head.direction;
         if config.easy_mode
             && ((head_pos.x == 0 && head.direction == Direction::Left)
                 || (head_pos.x == ARENA_WIDTH as i32 - 1 && head.direction == Direction::Right)
@@ -267,7 +270,7 @@ fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&m
             } else {
                 head.direction
             };
-        if dir != head.direction.opposite() {
+        if dir != head.last_direction.opposite() {
             head.direction = dir;
         }
     }
