@@ -1,10 +1,11 @@
+#![allow(clippy::too_many_arguments)]
 mod ai;
 #[cfg(feature = "python")]
 pub mod python;
 
 use std::time::Duration;
 
-use ai::{snake_movement_agent, Players};
+use ai::{snake_movement_agent, Opponents, Players};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
@@ -90,6 +91,11 @@ enum GameOverReason {
 
 struct ResetGameEvent;
 
+#[derive(Component)]
+struct Level {
+    level: usize,
+}
+
 struct GrowthEvent(Player);
 
 #[derive(Default)]
@@ -123,6 +129,26 @@ impl Direction {
             Self::Down => Self::Up,
         }
     }
+}
+
+fn spawn_level_text(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+    let text_style = TextStyle {
+        font,
+        font_size: 60.0,
+        color: Color::DARK_GRAY,
+    };
+    let text_alignment = TextAlignment {
+        vertical: VerticalAlign::Center,
+        horizontal: HorizontalAlign::Center,
+    };
+    commands
+        .spawn_bundle(Text2dBundle {
+            text: Text::with_section("level 1", text_style, text_alignment),
+            transform: Transform::from_translation(Vec3::new(0.0, 00.0, -0.0)),
+            ..default()
+        })
+        .insert(Level { level: 1 });
 }
 
 fn setup_camera(mut commands: Commands) {
@@ -293,8 +319,10 @@ fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&m
 fn game_over(
     mut reader: EventReader<GameOverEvent>,
     mut players: NonSendMut<Players>,
+    opponents: Res<Opponents>,
     mut pause: ResMut<Pause>,
     mut segments: Query<(&mut Sprite, &Player, &SnakeSegment), Without<SnakeHead>>,
+    mut level: Query<&mut Level>,
     segments_res: ResMut<SnakeSegments>,
 ) {
     if let Some(GameOverEvent(winner, reason)) = reader.iter().next() {
@@ -312,6 +340,14 @@ fn game_over(
                 if winner.iter().any(|p| p == player) {
                     sprite.color = HEAD_COLOR[player.index()];
                 }
+            }
+        }
+
+        if let Some(mut level) = level.iter_mut().next() {
+            match winner {
+                Some(Player::Blue) if level.level < opponents.0.len() => level.level += 1,
+                Some(Player::Red) if level.level > 1 => level.level -= 1,
+                _ => {}
             }
         }
 
@@ -339,6 +375,7 @@ fn reset_game(
     segments: Query<Entity, With<SnakeSegment>>,
     segments_res: ResMut<SnakeSegments>,
     mut food_timer: ResMut<FoodTimer>,
+    mut level_text: Query<(&Level, &mut Text)>,
     rng: ResMut<SmallRng>,
     food: Query<Entity, With<Food>>,
 ) {
@@ -348,6 +385,9 @@ fn reset_game(
         }
         food_timer.0 = Some(4);
         spawn_snake(commands, segments_res, rng);
+        if let Some((level, mut text)) = level_text.iter_mut().next() {
+            text.sections[0].value = format!("level {}", level.level);
+        }
     }
 }
 
@@ -485,7 +525,12 @@ pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
         .add_system(reset_game.after(snake_movement))
 }
 
-pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: bool) {
+pub fn run(
+    agent_path: Option<String>,
+    agent2_path: Option<String>,
+    opponents: Vec<String>,
+    easy_mode: bool,
+) {
     let opponent: Box<dyn Agent> = match agent_path {
         Some(path) => Box::new(RogueNetAgent::load(&path)),
         None => Box::new(RandomAgent::from_seed(1)),
@@ -494,6 +539,10 @@ pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: b
         Some(path) => Some(Box::new(RogueNetAgent::load(&path))),
         None => None,
     };
+    let opponents = opponents
+        .into_iter()
+        .map(|path| RogueNetAgent::load(&path))
+        .collect::<Vec<_>>();
     base_app(&mut App::new(), 0, Some(0.150))
         .insert_resource(WindowDescriptor {
             title: "Snake!".to_string(),
@@ -504,6 +553,8 @@ pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: b
         .insert_non_send_resource(Players([player, Some(opponent)]))
         .insert_resource(Config { easy_mode })
         .add_system(snake_movement_input.before(snake_movement))
+        .add_startup_system(spawn_level_text)
+        .insert_resource(Opponents(opponents))
         .add_system_set_to_stage(
             CoreStage::PostUpdate,
             SystemSet::new()
@@ -521,6 +572,7 @@ pub fn run_headless(agents: [Box<dyn Agent>; 2], seed: u64) {
             0.0,
         )))
         .insert_resource(Config { easy_mode: false })
+        .insert_resource(Opponents(vec![]))
         .insert_non_send_resource(Players([Some(a1), Some(a2)]))
         .add_plugins(MinimalPlugins)
         .run();

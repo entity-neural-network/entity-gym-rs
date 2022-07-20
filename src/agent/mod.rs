@@ -31,6 +31,19 @@ pub trait AgentOps {
     fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A>;
 }
 
+impl<T: Agent> AgentOps for T {
+    fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
+        self.act_raw(A::name(), A::num_actions(), obs)
+            .map(A::from_u64)
+    }
+
+    #[must_use]
+    fn act_async<A: Action>(&mut self, obs: &Obs) -> ActionReceiver<A> {
+        let receiver = self.act_async_raw(A::name(), A::num_actions(), obs);
+        unsafe { std::mem::transmute::<ActionReceiver<u64>, ActionReceiver<A>>(receiver) }
+    }
+}
+
 impl AgentOps for dyn Agent {
     fn act<A: Action>(&mut self, obs: &Obs) -> Option<A> {
         self.act_raw(A::name(), A::num_actions(), obs)

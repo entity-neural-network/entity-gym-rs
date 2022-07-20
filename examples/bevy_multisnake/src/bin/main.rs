@@ -10,11 +10,19 @@ struct Snake {
     #[clap(long, value_parser)]
     agent2_path: Option<String>,
 
+    #[clap(long, value_parser, multiple_values = true)]
+    opponents: Vec<String>,
+
     #[clap(long, action)]
     easy_mode: bool,
 }
 
 fn main() {
     let args = Snake::parse();
-    run(args.agent_path, args.agent2_path, args.easy_mode);
+    run(
+        args.agent_path,
+        args.agent2_path,
+        args.opponents,
+        args.easy_mode,
+    );
 }
