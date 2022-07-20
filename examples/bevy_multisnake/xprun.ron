@@ -1,0 +1,63 @@
+XpV0(
+    project: "enn",
+    containers: {
+        "main": (
+            command: ["poetry", "run", "python", "-u", "train.py", "--config=train.ron"],
+            build: [
+                From("nvcr.io/nvidia/pytorch:21.03-py3"),
+
+                // Install Poetry
+                Run("curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -"),
+                Env("PATH", "/root/.poetry/bin:${PATH}"),
+
+                // Required by alsa library (Bevy dependency)
+                Run("apt-get update"),
+                Run("apt-get install libasound2-dev -y"),
+                Run("apt-get install libudev-dev -y"),
+
+                // Install Rust toolchain
+                Run("apt-get update"),
+                Run("apt-get install curl build-essential --yes"),
+                Run("curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"),
+                Env("PATH", "/root/.cargo/bin:${PATH}"),
+
+                // Cache dependencies by installing them at fixed commit (to avoid long rebuilds when changing dependencies)
+                Repo(
+                    paths: [
+                        "pyproject.toml",
+                        "poetry.lock",
+                        "examples/bevy_multisnake/pyproject.toml",
+                        "examples/bevy_multisnake/poetry.lock",
+                    ],
+                    target_dir: "/root/entity-gym-rs",
+                    rev: "f48fc73",
+                ),
+
+                // Build xprun from source
+                Repo(url: "git@github.com:cswinter/xprun.git", rev: "d8a58d8", target_dir: "/root"),
+                Cd("/root/entity-gym-rs/examples/bevy_multisnake"),
+                Run("poetry run pip install maturin==0.13.0"),
+                Run("poetry run maturin develop --features=python --release --manifest-path=/root/xprun/Cargo.toml"),
+
+                Run("poetry install"),
+                Run("poetry run pip install setuptools==59.5.0"),
+                Run("poetry run pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html"),
+                Run("poetry run pip install torch-scatter -f https://data.pyg.org/whl/torch-1.10.0+cu113.html"),
+
+                Run("poetry install"),
+
+                // Build entity-gym-rs and bevy_multisnake
+                Repo(target_dir: "/root"),
+                Cd("/root/entity-gym-rs/examples/bevy_multisnake"),
+                Run("poetry run maturin develop --features=python --release --manifest-path=../../Cargo.toml"),
+                Run("poetry run maturin develop --features=python --release"),
+            ],
+            gpu: 1,
+            gpu_mem: "20GiB",
+            cpu_mem: "10GiB",
+            env_secrets: {
+                "WANDB_API_KEY": "wandb-api-key",
+            },
+        )
+    }
+)
