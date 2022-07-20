@@ -165,7 +165,7 @@ fn spawn_snake(
             let half_width = ARENA_WIDTH / 2;
             let player = if p == 0 { Player::Blue } else { Player::Red };
             let x = rng.gen_range((half_width * p)..(half_width * (p + 1))) as i32;
-            let y = rng.gen_range(1..(ARENA_HEIGHT - 1)) as i32;
+            let y = rng.gen_range(1..(ARENA_HEIGHT - 4)) as i32;
             vec![
                 commands
                     .spawn_bundle(SpriteBundle {
@@ -232,7 +232,8 @@ fn snake_movement(
     #[allow(clippy::needless_collect)]
     let all_segment_positions = segments
         .iter()
-        .flatten()
+        // Drop final segment since it will move to next position
+        .flat_map(|s| s[0..s.len() - 1].iter())
         .map(|e| *positions.get_mut(*e).unwrap())
         .collect::<Vec<Position>>();
     let mut head_positions = vec![];
