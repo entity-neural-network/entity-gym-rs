@@ -15,7 +15,6 @@ use rand::{Rng, SeedableRng};
 const HEAD_COLOR: [Color; 2] = [Color::rgb(0.6, 0.6, 1.0), Color::rgb(1.0, 0.6, 0.6)];
 const FOOD_COLOR: Color = Color::rgb(1.0, 0.0, 1.0);
 const SNAKE_SEGMENT_COLOR: [Color; 2] = [Color::rgb(0.2, 0.2, 0.4), Color::rgb(0.4, 0.2, 0.2)];
-const BACKGROUND_COLOR: Color = Color::rgb(0.04, 0.04, 0.04);
 
 const ARENA_HEIGHT: u32 = 10;
 const ARENA_WIDTH: u32 = 10;
@@ -28,6 +27,11 @@ struct Config {
 struct Position {
     x: i32,
     y: i32,
+}
+
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+struct ZPos {
+    z: i32,
 }
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
@@ -83,6 +87,8 @@ enum GameOverReason {
     SnakeCollision,
     WallCollision,
 }
+
+struct ResetGameEvent;
 
 struct GrowthEvent(Player);
 
@@ -149,6 +155,7 @@ fn spawn_snake(
                     })
                     .insert(SnakeSegment)
                     .insert(Position { x, y })
+                    .insert(ZPos { z: 0 })
                     .insert(player)
                     .insert(Size::square(0.8))
                     .id(),
@@ -172,15 +179,18 @@ fn spawn_segment(commands: &mut Commands, position: Position, player: Player) ->
         })
         .insert(SnakeSegment)
         .insert(position)
+        .insert(ZPos { z: 1 })
         .insert(Size::square(0.65))
         .insert(player)
         .id()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn snake_movement(
     config: Res<Config>,
     mut last_tail_position: ResMut<LastTailPosition>,
     mut game_over_writer: EventWriter<GameOverEvent>,
+    mut reset_game_writer: EventWriter<ResetGameEvent>,
     mut pause: ResMut<Pause>,
     segments: ResMut<SnakeSegments>,
     mut heads: Query<(Entity, &mut SnakeHead, &Player)>,
@@ -188,6 +198,9 @@ fn snake_movement(
 ) {
     if pause.0 > 0 {
         pause.0 -= 1;
+        if pause.0 == 1 {
+            reset_game_writer.send(ResetGameEvent);
+        }
         return;
     }
     #[allow(clippy::needless_collect)]
@@ -278,16 +291,11 @@ fn snake_movement_input(keyboard_input: Res<Input<KeyCode>>, mut heads: Query<&m
 
 #[allow(clippy::too_many_arguments)]
 fn game_over(
-    mut commands: Commands,
     mut reader: EventReader<GameOverEvent>,
     mut players: NonSendMut<Players>,
-    mut food_timer: ResMut<FoodTimer>,
-    mut clear_color: ResMut<ClearColor>,
     mut pause: ResMut<Pause>,
-    rng: ResMut<SmallRng>,
+    mut segments: Query<(&mut Sprite, &Player, &SnakeSegment), Without<SnakeHead>>,
     segments_res: ResMut<SnakeSegments>,
-    food: Query<Entity, With<Food>>,
-    segments: Query<Entity, With<SnakeSegment>>,
 ) {
     if let Some(GameOverEvent(winner, reason)) = reader.iter().next() {
         let game_over_reason_str = match reason {
@@ -296,15 +304,17 @@ fn game_over(
             GameOverReason::HeadCollision => "game_over/head_collision",
             GameOverReason::MaxLengthReached => "game_over/max_length_reached",
         };
-        pause.0 = 5;
-        clear_color.0 = match winner {
-            Some(winner) => SNAKE_SEGMENT_COLOR[winner.index()],
-            None => BACKGROUND_COLOR,
-        };
-        for ent in food.iter().chain(segments.iter()) {
-            commands.entity(ent).despawn();
+        pause.0 = 10;
+
+        if matches!(reason, GameOverReason::MaxLengthReached) {
+            // If player wins by reaching the max length, set color of all segments to the winner's color.
+            for (mut sprite, player, _) in segments.iter_mut() {
+                if winner.iter().any(|p| p == player) {
+                    sprite.color = HEAD_COLOR[player.index()];
+                }
+            }
         }
-        food_timer.0 = Some(4);
+
         for (i, player) in players.0.iter_mut().enumerate() {
             if let Some(player) = player {
                 let score = match winner {
@@ -320,13 +330,29 @@ fn game_over(
                 player.game_over_metrics(score, &metrics);
             }
         }
+    }
+}
+
+fn reset_game(
+    mut reader: EventReader<ResetGameEvent>,
+    mut commands: Commands,
+    segments: Query<Entity, With<SnakeSegment>>,
+    segments_res: ResMut<SnakeSegments>,
+    mut food_timer: ResMut<FoodTimer>,
+    rng: ResMut<SmallRng>,
+    food: Query<Entity, With<Food>>,
+) {
+    if let Some(ResetGameEvent) = reader.iter().next() {
+        for ent in food.iter().chain(segments.iter()) {
+            commands.entity(ent).despawn();
+        }
+        food_timer.0 = Some(4);
         spawn_snake(commands, segments_res, rng);
     }
 }
 
 fn snake_eating(
     mut food_timer: ResMut<FoodTimer>,
-    mut clear_color: ResMut<ClearColor>,
     mut commands: Commands,
     mut growth_writer: EventWriter<GrowthEvent>,
     food_positions: Query<(Entity, &Position), With<Food>>,
@@ -336,7 +362,7 @@ fn snake_eating(
         for (ent, food_pos) in food_positions.iter() {
             if food_pos == head_pos {
                 growth_writer.send(GrowthEvent(player));
-                clear_color.0 = BACKGROUND_COLOR;
+                //clear_color.0 = BACKGROUND_COLOR;
                 commands.entity(ent).despawn();
                 food_timer.0 = Some(4);
             }
@@ -374,22 +400,22 @@ fn size_scaling(windows: Res<Windows>, mut q: Query<(&Size, &mut Transform)>) {
         transform.scale = Vec3::new(
             sprite_size.width / ARENA_WIDTH as f32 * window.width() as f32,
             sprite_size.height / ARENA_HEIGHT as f32 * window.height() as f32,
-            1.0,
+            2.0,
         );
     }
 }
 
-fn position_translation(windows: Res<Windows>, mut q: Query<(&Position, &mut Transform)>) {
+fn position_translation(windows: Res<Windows>, mut q: Query<(&Position, &ZPos, &mut Transform)>) {
     fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
         let tile_size = bound_window / bound_game;
         pos / bound_game * bound_window - (bound_window / 2.) + (tile_size / 2.)
     }
     let window = windows.get_primary().unwrap();
-    for (pos, mut transform) in q.iter_mut() {
+    for (pos, zpos, mut transform) in q.iter_mut() {
         transform.translation = Vec3::new(
             convert(pos.x as f32, window.width() as f32, ARENA_WIDTH as f32),
             convert(pos.y as f32, window.height() as f32, ARENA_HEIGHT as f32),
-            0.0,
+            zpos.z as f32,
         );
     }
 }
@@ -410,9 +436,8 @@ fn food_spawner(
             let pos = loop {
                 let x = rng.gen_range(0..ARENA_WIDTH) as i32;
                 let y = rng.gen_range(0..ARENA_HEIGHT) as i32;
-                let pos = Position { x, y };
-                if !segments.iter().any(|(_, p)| *p == pos) {
-                    break pos;
+                if !segments.iter().any(|(_, p)| p.x == x && p.y == y) {
+                    break Position { x, y };
                 }
             };
             commands
@@ -425,6 +450,7 @@ fn food_spawner(
                 })
                 .insert(Food)
                 .insert(pos)
+                .insert(ZPos { z: 0 })
                 .insert(Size::square(0.8));
             food_timer.0 = None;
         } else {
@@ -453,8 +479,10 @@ pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
         .insert_resource(LastTailPosition::default())
         .add_event::<GrowthEvent>()
         .add_event::<GameOverEvent>()
+        .add_event::<ResetGameEvent>()
         .add_system_set(main_system)
         .add_system(game_over.after(snake_movement))
+        .add_system(reset_game.after(snake_movement))
 }
 
 pub fn run(agent_path: Option<String>, agent2_path: Option<String>, easy_mode: bool) {
