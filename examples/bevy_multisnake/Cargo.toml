@@ -12,7 +12,7 @@ name = "bevy_multisnake"
 bevy = "0.7.0"
 rand = { version = "0.8.5", features = ["small_rng"] }
 
-entity-gym-rs = { path = "../.." }
+entity-gym-rs = { path = "../..", features = ["bevy"] }
 pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
 
 clap = { version = "3.1.7", features = ["derive"] }

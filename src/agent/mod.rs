@@ -3,6 +3,8 @@ mod featurizable;
 mod obs;
 mod random_agent;
 mod rogue_net_agent;
+#[cfg(feature = "bevy")]
+mod rogue_net_asset;
 mod train_agent;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -15,6 +17,8 @@ pub use featurizable::Featurizable;
 pub use obs::Obs;
 pub use random_agent::RandomAgent;
 pub use rogue_net_agent::RogueNetAgent;
+#[cfg(feature = "bevy")]
+pub use rogue_net_asset::{RogueNetAsset, RogueNetAssetLoader};
 pub use train_agent::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 
 pub trait Agent {

@@ -1,17 +1,19 @@
 use ndarray::Array2;
-use rogue_net::{load_checkpoint, RogueNet};
+use rogue_net::RogueNet;
 
 use super::Obs;
 use super::{ActionReceiver, Agent};
 
+#[derive(Clone)]
 pub struct RogueNetAgent {
-    net: RogueNet,
+    pub(crate) net: RogueNet,
 }
 
 impl RogueNetAgent {
     pub fn load<P: AsRef<std::path::Path>>(path: P) -> Self {
-        let net = load_checkpoint(path);
-        RogueNetAgent { net }
+        RogueNetAgent {
+            net: RogueNet::load(path),
+        }
     }
 }
 

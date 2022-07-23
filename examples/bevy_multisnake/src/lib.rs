@@ -5,11 +5,13 @@ pub mod python;
 
 use std::time::Duration;
 
-use ai::{snake_movement_agent, Opponents, Players};
+use ai::{snake_movement_agent, OpponentHandles, Opponents, Players};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{Action, Agent, RandomAgent, RogueNetAgent};
+use entity_gym_rs::agent::{
+    Action, Agent, RandomAgent, RogueNetAgent, RogueNetAsset, RogueNetAssetLoader,
+};
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
 
@@ -345,8 +347,11 @@ fn game_over(
         }
 
         if let Some(mut level) = level.iter_mut().next() {
+            println!("{:?}", level.level);
             match winner {
-                Some(Player::Blue) if level.level < opponents.0.len() => level.level += 1,
+                Some(Player::Blue) if dbg!(level.level) < dbg!(opponents.0.len()) => {
+                    level.level += 1
+                }
                 Some(Player::Red) if level.level > 1 => level.level -= 1,
                 _ => {}
             }
@@ -500,6 +505,16 @@ fn food_spawner(
     }
 }
 
+fn load_agents(mut opponent_handles: ResMut<OpponentHandles>, server: Res<AssetServer>) {
+    // load all 10 agents
+    opponent_handles.0 = [
+        "500k", "1m", "2m", "4m", "8m", "16m", "32m", "64m", "128m", "256m",
+    ]
+    .iter()
+    .map(|name| server.load(&format!("agents/{}.roguenet", name)))
+    .collect();
+}
+
 pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
     let mut main_system = SystemSet::new()
         .with_system(snake_movement_agent)
@@ -518,6 +533,7 @@ pub fn base_app(app: &mut App, seed: u64, timstep: Option<f64>) -> &mut App {
         .insert_resource(SmallRng::seed_from_u64(seed))
         .insert_resource(SnakeSegments::default())
         .insert_resource(LastTailPosition::default())
+        .insert_resource(OpponentHandles(vec![]))
         .add_event::<GrowthEvent>()
         .add_event::<GameOverEvent>()
         .add_event::<ResetGameEvent>()
@@ -563,6 +579,9 @@ pub fn run(
                 .with_system(size_scaling),
         )
         .add_plugins(DefaultPlugins)
+        .add_asset::<RogueNetAsset>()
+        .init_asset_loader::<RogueNetAssetLoader>()
+        .add_startup_system(load_agents)
         .run();
 }
 

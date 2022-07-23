@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 name = "entity_gym_rs"
 
 [dependencies]
-bevy = "0.7.0"
+bevy = { version = "0.7.0", optional = true }
 rand = { version = "0.8.5", features = ["small_rng"] }
 ragged-buffer = "0.3.8"
 pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
@@ -23,7 +23,7 @@ clap = { version = "3.1.7", features = ["derive"] }
 crossbeam = "0.8.1"
 rustc-hash = "1.0"
 atomicbox = "0.4.0"
-rogue_net = { git = "https://github.com/entity-neural-network/rogue-net-rs", rev = "50eac46" }
+rogue_net = { git = "https://github.com/entity-neural-network/rogue-net-rs", rev = "0b19818" }
 
 anyhow = "1.0"
 
@@ -34,5 +34,7 @@ crossbeam-channel = "0.5"
 entity-gym-derive = {path = "entity-gym-derive"}
 
 
+
 [features]
 python = ["pyo3", "numpy", "ragged-buffer/python"]
+bevy = ["dep:bevy"]

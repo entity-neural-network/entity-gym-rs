@@ -1,6 +1,6 @@
 use bevy::app::AppExit;
-use bevy::prelude::{EventWriter, NonSendMut, Query, Res, ResMut};
-use entity_gym_rs::agent::{Agent, AgentOps, Featurizable, Obs, RogueNetAgent};
+use bevy::prelude::{Assets, EventWriter, Handle, NonSendMut, Query, Res, ResMut};
+use entity_gym_rs::agent::{Agent, AgentOps, Featurizable, Obs, RogueNetAgent, RogueNetAsset};
 
 use crate::{Direction, Level, Pause, Player, Position, SnakeHead, SnakeSegments};
 
@@ -10,6 +10,8 @@ pub(crate) fn snake_movement_agent(
     mut exit: EventWriter<AppExit>,
     level: Query<&Level>,
     mut opponents: ResMut<Opponents>,
+    opponent_handles: ResMut<OpponentHandles>,
+    assets: Res<Assets<RogueNetAsset>>,
     pause: Res<Pause>,
     segments_res: Res<SnakeSegments>,
     food: Query<(&crate::Food, &Position)>,
@@ -18,6 +20,16 @@ pub(crate) fn snake_movement_agent(
     if pause.0 > 0 {
         return;
     }
+
+    // Check if all loaded
+    if opponents.0.is_empty() && opponent_handles.0.iter().all(|h| assets.get(h).is_some()) {
+        for handle in opponent_handles.0.iter() {
+            let net = assets.get(handle).unwrap().agent.clone();
+            opponents.0.push(net);
+        }
+        println!("Loaded all opponents {:?}", opponents.0.len());
+    }
+
     let mut head_actions = vec![];
     for (head, head_pos, player) in heads.iter_mut() {
         let obs = Obs::new(segments_res.0[player.index()].len() as f32 * 0.1)
@@ -61,6 +73,7 @@ pub(crate) fn snake_movement_agent(
 pub struct Players(pub [Option<Box<dyn Agent>>; 2]);
 
 pub struct Opponents(pub Vec<RogueNetAgent>);
+pub struct OpponentHandles(pub Vec<Handle<RogueNetAsset>>);
 
 #[derive(Featurizable)]
 pub struct Head {
