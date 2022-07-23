@@ -3,6 +3,9 @@ name = "entity-gym-derive"
 version = "0.1.0"
 authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Derive macros for the entity-gym-rs crate"
+repository = "https://github.com/entity-neural-network/entity-gym-rs"
 
 [lib]
 proc-macro = true
