@@ -23,7 +23,7 @@ jobs:
         with:
           maturin-version: latest
           command: build
-          args: --cargo-extra-args="--features=python"
+          args: --features=python
       - name: Test
         run: |
           python -m pip install --upgrade pip

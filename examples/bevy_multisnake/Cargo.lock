@@ -1378,6 +1378,8 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "entity-gym-derive"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eade1c10cc657c7bcc8c74e7efed401246325988da68473bfafa3c6398166eb6"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
