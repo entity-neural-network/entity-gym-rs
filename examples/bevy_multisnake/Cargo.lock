@@ -1403,7 +1403,7 @@ dependencies = [
  "pyo3",
  "ragged-buffer",
  "rand",
- "rogue_net",
+ "rogue-net",
  "rustc-hash",
 ]
 
@@ -2946,9 +2946,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "rogue_net"
+name = "rogue-net"
 version = "0.1.0"
-source = "git+https://github.com/entity-neural-network/rogue-net-rs?rev=0b19818#0b19818a200612424e6ec7ec8d09879171669cd2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae7ff7db009e5faa905de103df36d4c53ee7dd34a22b3299c37f3c1bba83fa3f"
 dependencies = [
  "clap",
  "env_logger 0.9.0",

@@ -23,7 +23,7 @@ clap = { version = "3.1.7", features = ["derive"] }
 crossbeam = "0.8.1"
 rustc-hash = "1.0"
 atomicbox = "0.4.0"
-rogue_net = { git = "https://github.com/entity-neural-network/rogue-net-rs", rev = "0b19818" }
+rogue-net = "0.1.0"
 
 anyhow = "1.0"
 

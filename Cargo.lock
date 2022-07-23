@@ -1364,17 +1364,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
-name = "entity-gym-derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "entity-gym-rs"
+name = "entity-gym"
 version = "0.1.0-dev"
 dependencies = [
  "anyhow",
@@ -1393,6 +1383,16 @@ dependencies = [
  "rand",
  "rogue_net",
  "rustc-hash",
+]
+
+[[package]]
+name = "entity-gym-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
