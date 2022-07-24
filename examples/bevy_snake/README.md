@@ -161,9 +161,9 @@ pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
 python = ["pyo3", "entity-gym-rs/python"]
 ```
 
-Defining the Python API requires a certain amount of boilerplate, all of which can be found in [`src/python.rs`](src/python.rs).
+Defining the Python API requires a little bit of additional boilerplate, all of which can be found in [`src/python.rs`](src/python.rs).
 
-1. We define a `Config` struct that allows us to pass in game settings from Python (not actually used for anything here).
+We define a `Config` struct that allows us to pass in game settings from Python (not actually used for anything here).
 
 ```rust
 #[derive(Clone)]
@@ -179,43 +179,31 @@ impl Config {
 }
 ```
 
-2. The [`spawn_env`](src/python.rs#L21) function usees the [`TrainEnvBuilder`][TrainEnvBuilder] to obtain a [`TrainAgentEnv`][TrainAgentEnv]/[`TrainAgent`][TrainAgent] pair.
-It spawns a thread that an instance of the game in headless mode with the training agent and returns the `TrainAgentEnv` which will be used by the Python code to interact with this game instance.
-Any observation and action types that will be used must be registered with the `TrainEnvBuilder`.
-
-```rust
-pub fn spawn_env(_config: Config, seed: u64) -> TrainAgentEnv {
-    let (env, agent) = TrainEnvBuilder::default()
-        .entity::<ai::Head>()
-        .entity::<ai::SnakeSegment>()
-        .entity::<ai::Food>()
-        .action::<Direction>()
-        .build();
-    thread::spawn(move || {
-        super::run_headless(Box::new(agent), seed);
-    });
-    env
-}
-```
-
-3. The [`create_env`](src/python.rs#L36) function is what we will actually call from Python to create an array of game instances.
-It's largely boilerplate, the only part that's specific to the game is the `Config` type and the call to `spawn_env`.
+The [`create_env`](src/python.rs#L21) function usees the [`TrainEnvBuilder`][TrainEnvBuilder] to construct a [`PyVecEnv`] instance which runs multiple instances of the game in parallel and will be used directly by the Python training framework in [train.py](train.py).
+We first declare the types of all the entities and actions that we want to use in the game.
+When we pass the [`run_headless`](src/lib.rs#L310) function to `build`, the `TrainEnvBuilder` will spawn one thread for each environment that calls `run_headless` with a clone of the `Config`, a `TrainAgent` that connects the game to the Python training framework, and a random seed.
+The `num_envs`, `threads`, and `first_env_index` parameters are simply forwarded from Python.
 
 ```rust
 #[pyfunction]
 fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
-    PyVecEnv {
-        env: VecEnv::new(
-            Arc::new(move |seed| spawn_env(config.clone(), seed)),
+    TrainEnvBuilder::default()
+        .entity::<ai::Head>()
+        .entity::<ai::SnakeSegment>()
+        .entity::<ai::Food>()
+        .action::<Direction>()
+        .build(
+            config,
+            super::run_headless,
             num_envs,
             threads,
             first_env_index,
-        ),
-    }
+        )
 }
+
 ```
 
-Finally, the `#[pymodule]` attribute constructs the Python module and registers the `Config` type and the `create_env` function.
+Finally, the `#[pymodule]` macro constructs the Python module and registers the `Config` type and the `create_env` function.
 
 ```rust
 #[pymodule]

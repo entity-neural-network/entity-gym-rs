@@ -1,4 +1,4 @@
-mod ai;
+pub mod ai;
 #[cfg(feature = "python")]
 pub mod python;
 
@@ -8,7 +8,9 @@ use ai::{snake_movement_agent, Player};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{self, Action, Agent, Obs};
+use entity_gym_rs::agent::{self, Action, Obs, TrainAgent};
+#[cfg(feature = "python")]
+use python::Config;
 use rand::prelude::{random, SmallRng};
 use rand::{Rng, SeedableRng};
 
@@ -63,7 +65,7 @@ struct Food;
 struct FoodTimer(u32);
 
 #[derive(PartialEq, Copy, Clone, Debug, Action)]
-enum Direction {
+pub enum Direction {
     Left,
     Up,
     Right,
@@ -330,12 +332,13 @@ pub fn run(agent_path: Option<String>) {
         .run();
 }
 
-pub fn run_headless(agent: Box<dyn Agent>, seed: u64) {
+#[cfg(feature = "python")]
+pub fn run_headless(_: Config, agent: TrainAgent, seed: u64) {
     base_app(&mut App::new(), seed, None)
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
         )))
-        .insert_non_send_resource(Player(agent))
+        .insert_non_send_resource(Player(Box::new(agent)))
         .add_plugins(MinimalPlugins)
         .run();
 }

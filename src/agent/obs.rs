@@ -32,6 +32,8 @@ use super::Featurizable;
 /// ```
 pub struct Obs {
     pub(crate) entities: HashMap<&'static str, (Vec<f32>, usize, usize)>,
+    // Field is only accessed when cfg(feature = "python").
+    #[allow(dead_code)]
     pub(crate) done: bool,
     pub(crate) score: f32,
     pub(crate) metrics: FxHashMap<String, f32>,

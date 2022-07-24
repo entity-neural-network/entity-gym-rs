@@ -1,17 +1,22 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::thread;
 
 use crate::low_level::{
     Action, ActionMask, ActionSpace, ActionType, CompactFeatures, Entity, Environment, ObsSpace,
     Observation,
 };
+use crate::python::py_vec_env::PyVecEnv;
+use crate::python::VecEnv;
+use arrayvec::ArrayVec;
 use crossbeam::channel::{bounded, Receiver, Sender};
 
 use super::{ActionReceiver, Agent, Featurizable, InnerActionReceiver, Obs};
 
-/// An [`Environment`] implementation that is paired with a [`TrainAgent`].
+/// An [`Environment`] implementation that is paired with one or more [`TrainAgent`].
 ///
 /// To create a [`TrainAgent`], use [`TrainEnvBuilder`].
+#[cfg_attr(docsrs, doc(cfg(feature = "python")))]
 pub struct TrainAgentEnv {
     obs_space: ObsSpace,
     action_space: Vec<(String, ActionSpace)>,
@@ -21,7 +26,8 @@ pub struct TrainAgentEnv {
 
 /// Used during training to interface with an external agent implementation.
 ///
-/// To create a [`TrainAgent`], use [`TrainEnvBuilder`].
+/// Train agents are created when constructing a Python training environment with [`TrainEnvBuilder`].
+#[cfg_attr(docsrs, doc(cfg(feature = "python")))]
 pub struct TrainAgent {
     action: Receiver<u64>,
     observation: Sender<Observation>,
@@ -41,23 +47,18 @@ pub struct TrainAgent {
     agent_count: usize,
 }
 
-/// Used to crate a [`TrainAgent`]/[`TrainAgentEnv`] pair which can be used to train an agent.
+/// Used to export an application defines its own run loop and contains one or more [`Agent`]s to Python as a [`PyVecEnv`].
 ///
-/// The [`TrainAgent`]/[`TrainAgentEnv`] are used to interface with an external Python training training framework.
-/// The [`TrainAgent`] is an [`Agent`] implementation that simply forwards all actions to the corresponding
-/// [`TrainAgentEnv`], and blocks on the [`TrainAgentEnv`] to receive actions. The [`TrainAgentEnv`] implements
-/// the [`Environment`] trait and is used by the Python training framework to single-step the application.
+/// # Example
 ///
-/// # Examples
-/// Setting up training requires [PyO3](https://pyo3.rs) and a certain amount of boilerplate to define a Python API:
+/// The following code uses Pyo# to export a Python module with a `create_env` function that can be used from Python to create a
+/// [enn-trainer](https://github.com/entity-neural-network/enn-trainer)-compatible training environment.
+/// See [examples/bevy_snake](https://github.com/entity-neural-network/entity-gym-rs/tree/main/examples/bevy_snake) for a full example
+/// of how to run training.
 ///
 /// ```rust
-/// use std::sync::Arc;
-/// use std::thread;
-///
-/// use entity_gym_rs::agent::{TrainAgent, TrainAgentEnv, TrainEnvBuilder, Action, Featurizable, Agent};
+/// use entity_gym_rs::agent::{TrainEnvBuilder, TrainAgent, Featurizable, Action};
 /// use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
-/// use entity_gym_rs::low_level::VecEnv;
 /// use pyo3::prelude::*;
 ///
 /// #[derive(Featurizable)]
@@ -69,53 +70,48 @@ pub struct TrainAgent {
 /// #[derive(Action)]
 /// enum Move { Up, Down, Left, Right }
 ///
-/// fn run_headless(agent: Box<dyn Agent>, seed: u64) {
-///    // Runs the environment.
-///    todo!()
-/// }
+/// #[derive(Clone)]
+/// #[pyclass]
+/// pub struct Config;
 ///
-/// pub fn spawn_env(seed: u64) -> TrainAgentEnv {
-///     // The `TrainEnvBuilder` declares all entity and action types
-///     // that will be used by the agent.
-///     let (env, agent) = TrainEnvBuilder::default()
-///         .entity::<Head>()
-///         .entity::<Food>()
-///         .action::<Move>()
-///         .build();
-///     // Start a separate thread to drive execution of the environment.
-///     thread::spawn(move || {
-///         run_headless(Box::new(agent), seed);
-///     });
-///     env
-/// }
-///
-/// // Defines a function that will be accessible from Python which creates multiple environments.
-/// #[pyfunction]
-/// fn create_env(num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
-///     // Boilerplate
-///     PyVecEnv {
-///         env: VecEnv::new(
-///             Arc::new(move |seed| spawn_env(seed)),
-///             num_envs,
-///             threads,
-///             first_env_index,
-///         ),
+/// #[pymethods]
+/// impl Config {
+///     #[new]
+///     fn new() -> Self {
+///         Config
 ///     }
 /// }
 ///
-/// // This defines a Python module and adds our function to it.
+/// fn run_headless(config: Config, agent: TrainAgent, seed: u64) {
+///    // Run the environment.
+///    todo!()
+/// }
+///
+/// #[pyfunction]
+/// fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
+///     TrainEnvBuilder::default()
+///         // Declar all entity and action types that will be used
+///         .entity::<Head>()
+///         .entity::<Food>()
+///         .action::<Move>()
+///         .build(
+///             config,
+///             run_headless,
+///             num_envs,
+///             threads,
+///             first_env_index,
+///         )
+/// }
+///
 /// #[pymodule]
-/// fn bevy_snake_enn(_py: Python, m: &PyModule) -> PyResult<()> {
+/// fn bevy_snake_ai(_py: Python, m: &PyModule) -> PyResult<()> {
 ///     m.add_function(wrap_pyfunction!(create_env, m)?)?;
+///     m.add_class::<Config>()?;
 ///     Ok(())
 /// }
 ///```
-///
-/// We now use maturin to build a Python package that exports our environment
-/// in a way that is compatible with the Python [enn-trainer](https://github.com/entity-neural-network/enn-trainer) training framework.
-/// See [examples/bevy_snake](https://github.com/entity-neural-network/entity-gym-rs/tree/main/examples/bevy_snake) for a full example
-/// of how to run training.
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(docsrs, doc(cfg(feature = "python")))]
 pub struct TrainEnvBuilder {
     entities: Vec<(String, Entity)>,
     actions: Vec<(String, ActionSpace)>,
@@ -283,59 +279,32 @@ impl TrainEnvBuilder {
         self
     }
 
-    /// Creates a new [`TrainAgentEnv`] which is connected to multiple [`TrainAgent`]s.
-    /// When using multiple agents in an environment, it is required to call `act_async`
-    /// on each agent before awaiting any actions.
-    pub fn build_multiagent(self, num_agents: usize) -> (TrainAgentEnv, Vec<TrainAgent>) {
-        let mut environment = TrainAgentEnv {
-            obs_space: ObsSpace {
-                entities: self.entities.to_vec(),
-            },
-            action_space: self.actions,
-            action: vec![],
-            observation: vec![],
-        };
-        let mut agents = vec![];
-        let obs_remaining = [
-            Arc::new(AtomicUsize::new(num_agents)),
-            Arc::new(AtomicUsize::new(num_agents)),
-        ];
-        for _ in 0..num_agents {
+    /// Spawns multiple environment instances and returns a new [`PyVecEnv`] which is connected to them.
+    ///
+    /// # Arguments
+    /// * `config` - A configuration object which will be forwarded to every `runner`.
+    /// * `runner` - A function which receivs a config, [`TrainAgent`] instance, and a random seed as input, and which runs an instance of the environment.
+    /// * `num_envs` - The number of parallel environment instances to spawn.
+    /// * `threads` - The number of threads to use for interfacing with the individual environment instances.
+    /// * `first_env_index` - Offset for environment seeding.
+    pub fn build<Config, Runner>(
+        self,
+        config: Config,
+        runner: Runner,
+        num_envs: usize,
+        threads: usize,
+        first_env_index: u64,
+    ) -> PyVecEnv
+    where
+        Config: Clone + Send + Sync + 'static,
+        Runner: Fn(Config, TrainAgent, u64) + Send + Sync + 'static,
+    {
+        let runner = Arc::new(runner);
+        let spawn_env = Arc::new(move |seed: u64| {
             let (action_tx, action_rx) = bounded(1);
             let (observation_tx, observation_rx) = bounded(1);
             let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
-            environment.action.push(action_tx);
-            environment.observation.push(observation_rx);
-            agents.push(TrainAgent {
-                action: action_rx,
-                observation: observation_tx,
-                entity_names,
-                score: None,
-                obs_remaining: obs_remaining.clone(),
-                iremaining: 0,
-                observation_sent: false,
-                agent_count: num_agents,
-            });
-        }
-
-        (environment, agents)
-    }
-
-    /// Creates a new [`TrainAgentEnv`]/[`TrainAgent`] pair.
-    pub fn build(self) -> (TrainAgentEnv, TrainAgent) {
-        let (action_tx, action_rx) = bounded(1);
-        let (observation_tx, observation_rx) = bounded(1);
-        let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
-        (
-            TrainAgentEnv {
-                obs_space: ObsSpace {
-                    entities: self.entities.into_iter().collect(),
-                },
-                action_space: self.actions,
-                action: vec![action_tx],
-                observation: vec![observation_rx],
-            },
-            TrainAgent {
+            let agent = TrainAgent {
                 action: action_rx,
                 observation: observation_tx,
                 entity_names,
@@ -344,7 +313,82 @@ impl TrainEnvBuilder {
                 iremaining: 0,
                 observation_sent: false,
                 agent_count: 1,
-            },
-        )
+            };
+            let runner = runner.clone();
+            let config = config.clone();
+            thread::spawn(move || {
+                runner(config, agent, seed);
+            });
+            TrainAgentEnv {
+                obs_space: ObsSpace {
+                    entities: self.entities.clone().into_iter().collect(),
+                },
+                action_space: self.actions.clone(),
+                action: vec![action_tx],
+                observation: vec![observation_rx],
+            }
+        });
+
+        PyVecEnv {
+            env: VecEnv::new(spawn_env, num_envs, threads, first_env_index),
+        }
+    }
+
+    /// Spawns multiple environment instances, each containing multiple agents, and collects them in a [`PyVecEnv`].
+    pub fn build_multiagent<Config, Runner, const N: usize>(
+        self,
+        config: Config,
+        runner: Runner,
+        num_envs: usize,
+        threads: usize,
+        first_env_index: u64,
+    ) -> PyVecEnv
+    where
+        Config: Clone + Send + Sync + 'static,
+        Runner: Fn(Config, [TrainAgent; N], u64) + Send + Sync + 'static,
+    {
+        let runner = Arc::new(runner);
+        let spawn_env = Arc::new(move |seed: u64| {
+            let mut environment = TrainAgentEnv {
+                obs_space: ObsSpace {
+                    entities: self.entities.to_vec(),
+                },
+                action_space: self.actions.clone(),
+                action: vec![],
+                observation: vec![],
+            };
+            let obs_remaining = [Arc::new(AtomicUsize::new(N)), Arc::new(AtomicUsize::new(N))];
+            let agents = (0..N)
+                .map(|_| {
+                    let (action_tx, action_rx) = bounded(1);
+                    let (observation_tx, observation_rx) = bounded(1);
+                    let entity_names = self.entities.iter().map(|(n, _)| n.to_string()).collect();
+                    environment.action.push(action_tx);
+                    environment.observation.push(observation_rx);
+                    TrainAgent {
+                        action: action_rx,
+                        observation: observation_tx,
+                        entity_names,
+                        score: None,
+                        obs_remaining: obs_remaining.clone(),
+                        iremaining: 0,
+                        observation_sent: false,
+                        agent_count: N,
+                    }
+                })
+                .collect::<ArrayVec<_, N>>()
+                .into_inner()
+                .unwrap_or_else(|_| unreachable!());
+            let runner = runner.clone();
+            let config = config.clone();
+            thread::spawn(move || {
+                runner(config, agents, seed);
+            });
+            environment
+        });
+
+        PyVecEnv {
+            env: VecEnv::new(spawn_env, num_envs, threads, first_env_index),
+        }
     }
 }

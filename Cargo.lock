@@ -1380,6 +1380,7 @@ name = "entity-gym-rs"
 version = "0.1.3"
 dependencies = [
  "anyhow",
+ "arrayvec",
  "atomicbox",
  "bevy",
  "clap",

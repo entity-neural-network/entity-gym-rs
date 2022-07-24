@@ -3,7 +3,7 @@ from enn_trainer import TrainConfig, State, init_train_state, train, EnvConfig
 from entity_gym.env import VecEnv
 from entity_gym_rs import RustVecEnv
 
-from bevy_snake_enn import create_env, Config
+from bevy_snake_ai import create_env, Config
 
 
 def create_snake_vec_env(

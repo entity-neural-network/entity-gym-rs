@@ -5,6 +5,7 @@ mod random;
 mod rogue_net;
 #[cfg(feature = "bevy")]
 mod rogue_net_asset;
+#[cfg(feature = "python")]
 mod training;
 
 use std::io::Read;
@@ -21,6 +22,7 @@ pub use obs::Obs;
 pub use random::RandomAgent;
 #[cfg(feature = "bevy")]
 pub use rogue_net_asset::{RogueNetAsset, RogueNetAssetLoader};
+#[cfg(feature = "python")]
 pub use training::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 
 /// Agents are given observations and return actions.
@@ -86,6 +88,8 @@ pub struct ActionReceiver<A> {
 }
 
 enum InnerActionReceiver<A> {
+    // Variant is only constructed when cfg(feature = "python").
+    #[allow(dead_code)]
     Receiver {
         receiver: Receiver<u64>,
         observations_remaining: Arc<AtomicUsize>,

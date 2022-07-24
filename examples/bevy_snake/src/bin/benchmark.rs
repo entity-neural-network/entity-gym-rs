@@ -1,22 +1,24 @@
 #[cfg(feature = "python")]
-use bevy_snake_enn::python::{spawn_env, Config};
+use bevy_snake_enn::python::Config;
 
 #[cfg(feature = "python")]
 fn main() {
-    use entity_gym_rs::low_level::VecEnv;
+    use bevy_snake_enn::ai::{Food, Head, SnakeSegment};
+    use bevy_snake_enn::{run_headless, Direction};
+    use entity_gym_rs::agent::TrainEnvBuilder;
     use ragged_buffer::ragged_buffer::RaggedBuffer;
     //use std::hint::black_box;
-    use std::sync::Arc;
     use std::time::Instant;
 
     let start_time = Instant::now();
     let config = Config;
-    let mut env = VecEnv::new(
-        Arc::new(move |seed| spawn_env(config.clone(), seed)),
-        128,
-        4,
-        0,
-    );
+    let mut env = TrainEnvBuilder::default()
+        .entity::<Head>()
+        .entity::<SnakeSegment>()
+        .entity::<Food>()
+        .action::<Direction>()
+        .build(config, run_headless, 128, 4, 0)
+        .env;
     let steps = 2000;
     env.reset();
     for i in 0..steps {
