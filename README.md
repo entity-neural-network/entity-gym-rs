@@ -1,5 +1,12 @@
 # EntityGym for Rust
 
+[![Crates.io](https://img.shields.io/crates/v/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
+[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](./LICENSE)
+[![Crates.io](https://img.shields.io/crates/d/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
+[![Actions Status](https://github.com/entity-neural-network/entity-gym-rs/workflows/Test/badge.svg)](https://github.com/entity-neural-network/entity-gym-rs/actions)
+[![Discord](https://img.shields.io/discord/913497968701747270?style=flat-square)](https://discord.gg/SjVqhSW4Qf)
+
+
 [EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel entity-based abstraction for reinforcement learning environments which enables highly ergonomic and efficient training of deep reinforcement learning agents.
 This crate provides bindings that allows Rust programs to be used as EntityGym training environments, and to load and run neural networks agents trained with [Entity Neural Network Trainer](https://github.com/entity-neural-network/enn-trainer) inside Rust.
 
