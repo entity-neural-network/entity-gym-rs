@@ -10,7 +10,7 @@ use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
 use entity_gym_rs::agent::{
-    Action, Agent, RandomAgent, RogueNetAgent, RogueNetAsset, RogueNetAssetLoader,
+    self, Action, Agent, Obs, RogueNetAgent, RogueNetAsset, RogueNetAssetLoader,
 };
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -365,11 +365,11 @@ fn game_over(
                     }
                     _ => segments_res.0[i].len() as f32 * 0.1,
                 };
-                let metrics = vec![
-                    (game_over_reason_str.to_string(), 1.0),
-                    ("final_length".to_string(), segments_res.0[i].len() as f32),
-                ];
-                player.game_over_metrics(score, &metrics);
+                player.game_over(
+                    &Obs::new(score)
+                        .metric(game_over_reason_str, 1.0)
+                        .metric("final_length", segments_res.0[i].len() as f32),
+                );
             }
         }
     }
@@ -549,11 +549,11 @@ pub fn run(
     easy_mode: bool,
 ) {
     let opponent: Box<dyn Agent> = match agent_path {
-        Some(path) => Box::new(RogueNetAgent::load(&path)),
-        None => Box::new(RandomAgent::from_seed(1)),
+        Some(path) => agent::load(path),
+        None => agent::random_seeded(42),
     };
     let player: Option<Box<dyn Agent>> = match agent2_path {
-        Some(path) => Some(Box::new(RogueNetAgent::load(&path))),
+        Some(path) => Some(agent::load(path)),
         None => None,
     };
     let opponents = opponents

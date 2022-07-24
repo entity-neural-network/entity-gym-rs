@@ -9,6 +9,9 @@ use crossbeam::channel::{bounded, Receiver, Sender};
 
 use super::{ActionReceiver, Agent, Featurizable, InnerActionReceiver, Obs};
 
+/// An [`Environment`] implementation that is paired with a [`TrainAgent`].
+///
+/// To create a [`TrainAgent`], use [`TrainEnvBuilder`].
 pub struct TrainAgentEnv {
     obs_space: ObsSpace,
     action_space: Vec<(String, ActionSpace)>,
@@ -16,6 +19,9 @@ pub struct TrainAgentEnv {
     observation: Vec<Receiver<Observation>>,
 }
 
+/// Used during training to interface with an external agent implementation.
+///
+/// To create a [`TrainAgent`], use [`TrainEnvBuilder`].
 pub struct TrainAgent {
     action: Receiver<u64>,
     observation: Sender<Observation>,
@@ -35,6 +41,80 @@ pub struct TrainAgent {
     agent_count: usize,
 }
 
+/// Used to crate a [`TrainAgent`]/[`TrainAgentEnv`] pair which can be used to train an agent.
+///
+/// The [`TrainAgent`]/[`TrainAgentEnv`] are used to interface with an external Python training training framework.
+/// The [`TrainAgent`] is an [`Agent`] implementation that simply forwards all actions to the corresponding
+/// [`TrainAgentEnv`], and blocks on the [`TrainAgentEnv`] to receive actions. The [`TrainAgentEnv`] implements
+/// the [`Environment`] trait and is used by the Python training framework to single-step the application.
+///
+/// # Examples
+/// Setting up training requires [PyO3](https://pyo3.rs) and a certain amount of boilerplate to define a Python API:
+///
+/// ```rust
+/// use std::sync::Arc;
+/// use std::thread;
+///
+/// use entity_gym_rs::agent::{TrainAgent, TrainAgentEnv, TrainEnvBuilder, Action, Featurizable, Agent};
+/// use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
+/// use entity_gym_rs::low_level::VecEnv;
+/// use pyo3::prelude::*;
+///
+/// #[derive(Featurizable)]
+/// struct Head;
+///
+/// #[derive(Featurizable)]
+/// struct Food;
+///
+/// #[derive(Action)]
+/// enum Move { Up, Down, Left, Right }
+///
+/// fn run_headless(agent: Box<dyn Agent>, seed: u64) {
+///    // Runs the environment.
+///    todo!()
+/// }
+///
+/// pub fn spawn_env(seed: u64) -> TrainAgentEnv {
+///     // The `TrainEnvBuilder` declares all entity and action types
+///     // that will be used by the agent.
+///     let (env, agent) = TrainEnvBuilder::default()
+///         .entity::<Head>()
+///         .entity::<Food>()
+///         .action::<Move>()
+///         .build();
+///     // Start a separate thread to drive execution of the environment.
+///     thread::spawn(move || {
+///         run_headless(Box::new(agent), seed);
+///     });
+///     env
+/// }
+///
+/// // Defines a function that will be accessible from Python which creates multiple environments.
+/// #[pyfunction]
+/// fn create_env(num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
+///     // Boilerplate
+///     PyVecEnv {
+///         env: VecEnv::new(
+///             Arc::new(move |seed| spawn_env(seed)),
+///             num_envs,
+///             threads,
+///             first_env_index,
+///         ),
+///     }
+/// }
+///
+/// // This defines a Python module and adds our function to it.
+/// #[pymodule]
+/// fn bevy_snake_enn(_py: Python, m: &PyModule) -> PyResult<()> {
+///     m.add_function(wrap_pyfunction!(create_env, m)?)?;
+///     Ok(())
+/// }
+///```
+///
+/// We now use maturin to build a Python package that exports our environment
+/// in a way that is compatible with the Python [enn-trainer](https://github.com/entity-neural-network/enn-trainer) training framework.
+/// See [examples/bevy_snake](https://github.com/entity-neural-network/entity-gym-rs/tree/main/examples/bevy_snake) for a full example
+/// of how to run training.
 #[derive(Debug, Clone, Default)]
 pub struct TrainEnvBuilder {
     entities: Vec<(String, Entity)>,
@@ -84,7 +164,7 @@ impl Environment for TrainAgentEnv {
 }
 
 impl Agent for TrainAgent {
-    fn act_raw(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
+    fn act_dyn(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
         self.send_obs_raw(action, obs);
         let remaining = self.obs_remaining[self.iremaining].load(Ordering::SeqCst);
         if remaining != 0 && (remaining != self.agent_count || self.agent_count == 1) {
@@ -101,7 +181,7 @@ impl Agent for TrainAgent {
         }
     }
 
-    fn act_async_raw(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
+    fn act_async_dyn(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
         self.send_obs_raw(action, obs);
         self.observation_sent = false;
         self.iremaining = 1 - self.iremaining;
@@ -115,11 +195,7 @@ impl Agent for TrainAgent {
         }
     }
 
-    fn game_over(&mut self, score: f32) {
-        self.game_over_metrics(score, Default::default());
-    }
-
-    fn game_over_metrics(&mut self, score: f32, metrics: &[(String, f32)]) {
+    fn game_over(&mut self, obs: &Obs) {
         let obs = Observation {
             features: CompactFeatures {
                 counts: vec![0; self.entity_names.len()],
@@ -128,8 +204,8 @@ impl Agent for TrainAgent {
             ids: vec![None],
             actions: vec![None],
             done: true,
-            reward: score - self.score.unwrap_or(0.0),
-            metrics: metrics.iter().cloned().collect(),
+            reward: obs.score - self.score.unwrap_or(0.0),
+            metrics: obs.metrics.clone(),
         };
         self.score = None;
         let _ = self.observation.send(obs);
@@ -175,6 +251,7 @@ impl TrainAgent {
 }
 
 impl TrainEnvBuilder {
+    /// Registers the type of an observable entity.
     pub fn entity<E: Featurizable>(mut self) -> Self {
         assert!(
             self.entities.iter().all(|(n, _)| n != E::name()),
@@ -190,7 +267,8 @@ impl TrainEnvBuilder {
         self
     }
 
-    pub fn action<A: super::Action>(mut self) -> Self {
+    /// Registers the type of an action.
+    pub fn action<'a, A: super::Action<'a>>(mut self) -> Self {
         assert!(
             self.actions.iter().all(|(n, _)| n != A::name()),
             "Already have an action with name \"{}\"",
@@ -205,6 +283,9 @@ impl TrainEnvBuilder {
         self
     }
 
+    /// Creates a new [`TrainAgentEnv`] which is connected to multiple [`TrainAgent`]s.
+    /// When using multiple agents in an environment, it is required to call `act_async`
+    /// on each agent before awaiting any actions.
     pub fn build_multiagent(self, num_agents: usize) -> (TrainAgentEnv, Vec<TrainAgent>) {
         let mut environment = TrainAgentEnv {
             obs_space: ObsSpace {
@@ -240,6 +321,7 @@ impl TrainEnvBuilder {
         (environment, agents)
     }
 
+    /// Creates a new [`TrainAgentEnv`]/[`TrainAgent`] pair.
     pub fn build(self) -> (TrainAgentEnv, TrainAgent) {
         let (action_tx, action_rx) = bounded(1);
         let (observation_tx, observation_rx) = bounded(1);

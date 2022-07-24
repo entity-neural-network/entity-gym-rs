@@ -1378,8 +1378,6 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 [[package]]
 name = "entity-gym-derive"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eade1c10cc657c7bcc8c74e7efed401246325988da68473bfafa3c6398166eb6"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -2949,9 +2947,9 @@ dependencies = [
 
 [[package]]
 name = "rogue-net"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae7ff7db009e5faa905de103df36d4c53ee7dd34a22b3299c37f3c1bba83fa3f"
+checksum = "4fd6b2789b0f76c6496c9418a6d603ea2b433f1bf3efb20d3fe6dce844cdaf3a"
 dependencies = [
  "clap",
  "env_logger 0.9.0",

@@ -67,7 +67,11 @@ fn field_names(data: &Data) -> (TokenStream, TokenStream, TokenStream) {
             //     let count = fields.unnamed.len();
             //     (quote! { #count }, quote! { &[#(#names),*] })
             // }
-            syn::Fields::Unit => (quote! { 0 }, quote! { &[] }, quote! { ::std::Vec::new() }),
+            syn::Fields::Unit => (
+                quote! { 0 },
+                quote! { &[] },
+                quote! { ::std::vec::Vec::new() },
+            ),
         },
         Data::Enum(_) => unimplemented!("Enum not supported, must be struct"),
         Data::Union(_) => unimplemented!("Union not supported, must be struct"),

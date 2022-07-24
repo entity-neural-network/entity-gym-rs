@@ -14,7 +14,7 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     let expanded = quote! {
         #[allow(unused_qualifications)]
-        impl #impl_generics Action for #name #ty_generics #where_clause {
+        impl #impl_generics Action<'static> for #name #ty_generics #where_clause {
             fn from_u64(index: u64) -> Self{
                 #from_u64
             }

@@ -8,7 +8,7 @@ use ai::{snake_movement_agent, Player};
 use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{Action, Agent, RandomAgent, RogueNetAgent};
+use entity_gym_rs::agent::{self, Action, Agent, Obs};
 use rand::prelude::{random, SmallRng};
 use rand::{Rng, SeedableRng};
 
@@ -204,7 +204,7 @@ fn game_over(
         for ent in food.iter().chain(segments.iter()) {
             commands.entity(ent).despawn();
         }
-        player.0.game_over(segments_res.0.len() as f32);
+        player.0.game_over(&Obs::new(segments_res.0.len() as f32));
         spawn_snake(commands, segments_res, rng);
     }
 }
@@ -316,8 +316,8 @@ pub fn run(agent_path: Option<String>) {
             ..default()
         })
         .insert_non_send_resource(match agent_path {
-            Some(path) => Player(Box::new(RogueNetAgent::load(path))),
-            None => Player(Box::new(RandomAgent::default())),
+            Some(path) => Player(agent::load(path)),
+            None => Player(agent::random()),
         })
         .add_system(snake_movement_input.before(snake_movement))
         .add_system_set_to_stage(

@@ -1,7 +1,22 @@
+/// A data structure that can be serialized into a data format that can be processed by a neural network.
+///
+/// Can be derived for structs where all fields are numeric, boolean, or [`Featurizable`].
+///
+/// # Example
+/// ```rust
+/// use entity_gym_rs::agent::Featurizable;
+///
+/// #[derive(Featurizable)]
+/// struct Player { x: i32, y: i32, is_alive: bool }
+/// ```
 pub trait Featurizable {
+    /// Returns the number of features after conversion to a vector.
     fn num_feats() -> usize;
+    /// Returns a list of human readable labels corresponding to each feature.
     fn feature_names() -> &'static [&'static str];
+    /// Serializes the entity into a vector of features.
     fn featurize(&self) -> Vec<f32>;
+    /// Returns a human readable name for the entity.
     fn name() -> &'static str;
 }
 

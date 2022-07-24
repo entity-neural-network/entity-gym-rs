@@ -1,9 +1,23 @@
-pub trait Action {
+/// Defines a categorical action. Can be derived for enums.
+///
+/// # Example
+/// ```rust
+/// use entity_gym_rs::agent::Action;
+///
+/// #[derive(Action)]
+/// enum Move { Up, Down, Left, Right }
+/// ```
+pub trait Action<'a> {
+    /// Instantiates an action from a u64.
     fn from_u64(index: u64) -> Self;
+    /// Converts an action to a u64.
     fn to_u64(&self) -> u64;
+    /// Returns the number of possible action choices.
     fn num_actions() -> u64;
-    fn name() -> &'static str;
-    fn labels() -> &'static [&'static str];
+    /// Returns the human readable name of the action.
+    fn name() -> &'a str;
+    /// Returns a list of human readable labels corresponding to each action choice.
+    fn labels() -> &'a [&'a str];
 }
 
 #[cfg(test)]
