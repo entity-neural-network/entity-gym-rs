@@ -1,6 +1,6 @@
 [project]
 name = "entity-gym-rs"
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 dependencies = [
     "numpy~=1.22.3",
     "ragged-buffer~=0.3.7",
