@@ -1,10 +1,11 @@
 # EntityGym for Rust
 
-[![Crates.io](https://img.shields.io/crates/v/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
-[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](./LICENSE)
-[![Crates.io](https://img.shields.io/crates/d/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
-[![Actions Status](https://github.com/entity-neural-network/entity-gym-rs/workflows/Test/badge.svg)](https://github.com/entity-neural-network/entity-gym-rs/actions)
+[![Crates.io](https://img.shields.io/crates/v/entity-gym-rs.svg?style=flat-square)](https://crates.io/crates/entity-gym-rs)
+[![PyPI](https://img.shields.io/pypi/v/entity-gym-rs.svg?style=flat-square)](https://pypi.org/project/entity-gym-rs/)
+[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg?style=flat-square)](./LICENSE)
+[![Crates.io](https://img.shields.io/crates/d/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs?style=flat-square)
 [![Discord](https://img.shields.io/discord/913497968701747270?style=flat-square)](https://discord.gg/SjVqhSW4Qf)
+[![Actions Status](https://github.com/entity-neural-network/entity-gym-rs/workflows/Test/badge.svg)](https://github.com/entity-neural-network/entity-gym-rs/actions)
 
 
 [EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel entity-based abstraction for reinforcement learning environments which enables highly ergonomic and efficient training of deep reinforcement learning agents.
@@ -17,12 +18,13 @@ The entity-gym-rs crate provides a high-level API that allows neural network age
 ```rust
 use entity_gym_rs::agent::{Agent, AgentOps, Obs, Action, Featurizable};
 
-// The `Action` trait can be automatically derived for any enum with only unit variants.
+// We can derive an `Action` trait on enums with only unit variants to allow it to be used as a categorical action.
 #[derive(Action, Debug)]
 enum Move { Up, Down, Left, Right }
 
-// The `Featurizable` trait can be automatically derived for any struct that contains
-// only primitive number types, booleans, or other `Featurizable` types.
+// The `Featurizable` trait converts data structures into a format that can be processed by neural networks.
+// It can be automatically derived for any struct that contains, only primitive number types, booleans, or
+// other `Featurizable` types.
 #[derive(Featurizable)]
 struct Player { x: i32, y: i32 }
 
@@ -36,10 +38,11 @@ struct Cake {
 fn main() {
     // Creates an agent that acts completely randomly.
     let mut agent = Agent::random();
-    // To load an neural network agent from an enn-trainer checkpoint, you would use the `load` method instead.
+    // Alternatively, load a trained neural network agent from a checkpoint.
     // let mut agent = Agent::load("agent");
 
-    // An observation can be constructed from any number of `Featurizable` objects.
+    // The neural network agents supported by entity-gym can process observations consisting
+    // of any number of `Featurizable` objects.
     let obs = Obs::new(0.0)
         .entities([Player { x: 0, y: 0 }])
         .entities([
@@ -47,7 +50,7 @@ fn main() {
             Cake { x: 10, y: 42, size: 12 },
         ]);
     
-    // The agent `act` method takes an observation and returns an action of the specified type.
+    // To get an action from an agent, we simple call the `act` method with the observation we constructed.
     let action = agent.act::<Move>(obs);
     println!("{:?}", action);
 }
