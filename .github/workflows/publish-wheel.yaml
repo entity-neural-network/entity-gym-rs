@@ -1,4 +1,4 @@
-name: Publish
+name: Publish PyPI wheel
 
 on:
   push:
@@ -56,4 +56,4 @@ jobs:
         with:
           maturin-version: latest
           command: publish
-          args: --username=__token__ --skip-existing --cargo-extra-args="--features=python"
+          args: --username=__token__ --skip-existing --features=python
