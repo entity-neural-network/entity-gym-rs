@@ -141,7 +141,7 @@ If you look at [`src/lib.rs`](src/lib.rs#L287), you will see that the original `
 
 - [`base_app`](src/lib.rs#L287) defines all the systems which we want to run both in the game and in the headless runner.
 - [`run`](src/lib.rs#L310) adds all the systems which we want when running the game, such as as creating a window and handling user input.
-- [`run_headless`](src/lib.rs#L310) omits the window and user input, uses the `MinimalPlugins` plugin set, sets up a run loop with 0 wait_duration.
+- [`run_headless`](src/lib.rs#L310) omits the window and user input, uses the `MinimalPlugins` plugin set, and sets up a run loop with 0 wait_duration.
 
 
 Another difference is that the original snake implementation used an event timer to spawn a food every second.
