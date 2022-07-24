@@ -1,14 +1,14 @@
 # Example Snake Game with Bevy
 
 This example shows how to expose a Bevy app as an entity-gym environment, use entity-gym to train a neural network to play snake, and then run the resulting neural network inside a Bevy game.
-The snake implementation is based on [https://github.com/marcusbuffett/bevy_snake]().
+The snake implementation is based on  [Marcus Buffett's snake clone](https://mbuffett.com/posts/bevy-snake-tutorial/).
 
 ## Overview
 
-I have tried to keep the code as close to the original as possible.
-The majority of the code in `lib.rs` is the same as the original `main.rs` file.
-Most of the entity-gym specific code is in [`src/ai.rs`](src/ai.rs).
-The `src/python.rs` contains some additional code required to export a Python API. The `train.py`, `train.ron`, and `pyproject.toml` files contain the code required to set up a Python environment and run training.
+The majority of the code is mostly unchanged from the [original implementation](https://github.com/marcusbuffett/bevy_snake/tree/c0344a40d28eb321493ee950e64ecc5bca6cc5a4):
+- The `main.rs` file has been renamed to `lib.rs`, with the new entry point moved to `bin/main.rs`.
+- The new AI controller lives in [`src/ai.rs`](src/ai.rs).
+- The additional code required for training is in [`src/python.rs`](src/python.rs), which defines a PyO3 Python API. The [`train.py`](train.py) is simple script to run training, [`train.ron`](train.ron) defines some hyperparameters, and [`pyproject.toml`](pyproject.toml)/[`poetry.lock`](poetry.lock) define required Python dependencies with the [Poetry](https://python-poetry.org/) package manager.
 
 ## Usage
 
@@ -24,26 +24,34 @@ Run with a trained neural network ([download link](https://www.dropbox.com/sh/la
 cargo run -- --agent-path bevy_snake1m/latest-step000000999424
 ```
 
-Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [poetry](https://python-poetry.org/) and only works on Linux, Nvidia GPU recommended):
+Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [poetry](https://python-poetry.org/) and only works on Linux. Nvidia GPU with working CUDA installation recommended.):
 
 ```shell
 poetry install
 poetry run pip install setuptools==59.5.0
 poetry run pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 poetry run pip install torch-scatter -f https://data.pyg.org/whl/torch-1.10.0+cu113.html
-poetry run pip install .
+poetry run maturin develop --release --features=python
 poetry run python train.py --config=train.ron --checkpoint-dir=checkpoints
 ```
 
 ## How it works
 
-To allow the snake game to be played by the AI, we add a `Player` resource that wraps an `AnyAgent` object.
+This guide lists all steps required to have an AI play the snake game rather than a human.
+
+The first step is to add a new resource to the app which encapsulates the AI player.
+
+The resource is defined in [`src/ai.rs`](src/ai.rs#L32):
 
 ```rust
-pub struct Player(pub AnyAgent);
+pub struct Player(pub Box<dyn Agent>);
 ```
 
-When creating our app, we initialize the agent by loading a neural network from a checkpoint:
+The [`Agent`](https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/trait.Agent.html) trait defines the interface for different AI implementations.
+
+
+To allow the snake game to be played by the AI, we add a `Player` resource that wraps an `AnyAgent` object.
+In [`src/lib.rs`](src/lib.rs#L318), we instantiate the `Player` either as a completely randomly acting agent, or as a neural network loaded from a checkpoint:
 
 ```rust
         .insert_non_send_resource(match agent_path {
@@ -52,84 +60,9 @@ When creating our app, we initialize the agent by loading a neural network from 
         })
 ```
 
-The core part of the integration happens inside the `snake_movement_agent` system defined in [`src/ai.rs`](src/ai.rs).
+The core part of the integration happens inside the [`snake_movement_agent`](src/ai.rs#L7) system.
 
-```rust
-pub(crate) fn snake_movement_agent(
-    mut player: NonSendMut<Player>,
-    mut heads: Query<(&mut SnakeHead, &Position)>,
-    mut exit: EventWriter<AppExit>,
-    segments_res: Res<SnakeSegments>,
-    food: Query<(&crate::Food, &Position)>,
-    segment: Query<(&crate::SnakeSegment, &Position)>,
-) {
-    if let Some((mut head, head_pos)) = heads.iter_mut().next() {
-        let obs = Obs::new(segments_res.len() as f32)
-            .entities(food.iter().map(|(_, p)| Food { x: p.x, y: p.y }))
-            .entities([head_pos].iter().map(|p| Head { x: p.x, y: p.y }))
-            .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
-        let action = player.0.act::<Move>(obs);
-        match action {
-            Some(Move(dir)) => {
-                if dir != head.direction.opposite() {
-                    head.direction = dir;
-                }
-            }
-            None => exit.send(AppExit),
-        }
-    }
-}
-```
-
-Let's disect what's going on here.
-The key line is `let action = player.0.act::<Move>(obs);`, which passes a snapshot the environment to the agent and returns us an `Move` action.
-The `Move` action is simply a wrapper around a `Direction` enum:
-
-```rust
-struct Move(Direction);
-```
-
-Additionally, `Move` implements the `Action` trait:
-
-```rust
-impl Action for Move {
-    fn from_u64(index: u64) -> Self {
-        match index {
-            0 => Move(Direction::Up),
-            1 => Move(Direction::Down),
-            2 => Move(Direction::Left),
-            3 => Move(Direction::Right),
-            _ => panic!("Invalid direction index"),
-        }
-    }
-
-    fn to_u64(&self) -> u64 {
-        match self.0 {
-            Direction::Up => 0,
-            Direction::Down => 1,
-            Direction::Left => 2,
-            Direction::Right => 3,
-        }
-    }
-
-    fn num_actions() -> u64 {
-        4
-    }
-
-    fn name() -> &'static str {
-        "move"
-    }
-
-    fn labels() -> &'static [&'static str] {
-        &["up", "down", "left", "right"]
-    }
-}
-```
-
-This basically just allows `Move` to be converted to/from an integer index and tells the trainig framework about the number of valid actions.
-This could just be done automatically by a derive macro.
-
-The input to the agent is an `Obs` struct:
+First, we construct an [`Obs`](https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/struct.Obs.html) structure which defines what parts of the game state are visible to the AI:
 
 ```rust
 let obs = Obs::new(segments_res.len() as f32)
@@ -138,47 +71,99 @@ let obs = Obs::new(segments_res.len() as f32)
     .entities(segment.iter().map(|(_, p)| SnakeSegment { x: p.x, y: p.y }));
 ```
 
-The argument taken by `Obs::new` is the current "score" achieved by the agent, which is used as the reward signal during training.
-We want the agent to create as long of a snake as possible, so we use the number of segments as the score.
+The argument to `Obs::new` is the current _score_ of the agent, which is the quantity that will be maximized in the training process.
+Since we want the agent to grow the snake as long as possible, we use the number of segments as the score.
 
-Additionally, we supply the `Obs` with several lists of entities that we want the agent to see.
-The entities must implement the `Featurizable` trait that allows them to be converted into a flat list of floating point numbers (again, this can be a derive macro):
+The `entities` method allows us to make different entities visible to the AI.
+The argument to `entities` is an iterator over [`Featurizable`](https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/trait.Featurizable.html) structs, which is a trait that allows structs to be converted into a representation that can be processed by the neural network.
+The [`Featurizable`](https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/trait.Featurizable.html) trait can be derived automatically for any structs that contain only primitive numerals, booleans, and types that implement `Featurizable`:
 
 ```rust
+#[derive(Featurizable)]
 pub struct Head {
     x: i32,
     y: i32,
 }
 
-impl Featurizable for Head {
-    fn num_feats() -> usize {
-        2
-    }
+#[derive(Featurizable)]
+pub struct SnakeSegment {
+    x: i32,
+    y: i32,
+}
 
-    fn feature_names() -> &'static [&'static str] {
-        &["x", "y"]
-    }
-
-    fn featurize(&self) -> Vec<f32> {
-        vec![self.x as f32, self.y as f32]
-    }
-
-    fn name() -> &'static str {
-        "Head"
-    }
+#[derive(Featurizable)]
+pub struct Food {
+    x: i32,
+    y: i32,
 }
 ```
 
-One final detail is that the `act` method may return `None`.
-This happens if we are running in training mode and the framework decides close the environment.
-In this case, we should terminate the application  by sending an `AppExit` event.
+The next part is calling the `act` method on the neural network, which returns an `Option<Direction>` in exchange for the observation we just constructed:
+
+```rust
+let action = player.0.act::<Direction>(&obs);
+```
+
+The type we use for the action (here, `Direction`) must implement the [`Action`](https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/trait.Action.html) trait.
+The `Action` trait can be derived automatically for any `enum` that consists only of unit variants:
+
+```rust
+#[derive(PartialEq, Copy, Clone, Debug, Action)]
+enum Direction {
+    Left,
+    Up,
+    Right,
+    Down,
+}
+```
+
+Due to a limitation in the current implementation, the `act` method can return `None`, which indicates that we should exit the game.
+Otherwise, we simple apply the action to the game the same way we would do with human input:
+
+```rust
+match action {
+    Some(dir) => {
+        if dir != head.direction.opposite() {
+            head.direction = dir;
+        }
+    }
+    None => exit.send(AppExit),
+}
+```
 
 ## Training
 
-To support training, we define a `run_headless` method at the end of [`src/lib.rs`](src/lib.rs) that creates a version of our app that runs as fast as possible and doesn't render any graphics.
-We also need some additional boilerplate that exports a Python interface, defined in [`src/python.rs`](src/python.rs). There are three interesting bits:
+Training neural network agents requires a version of the game that can interface with Python and run many headless game instances in parallel.
 
-1. We define a `Config` struct that allows us to pass configuration values to our game from Python (not actually used for anything here).
+### Headless runner
+
+If you look at [`src/lib.rs`](src/lib.rs#L287), you will see that the original `main` method has been split into three functions:
+
+- [`base_app`](src/lib.rs#L287) defines all the systems which we want to run both in the game and in the headless runner.
+- [`run`](src/lib.rs#L310) adds all the systems which we want when running the game, such as as creating a window and handling user input.
+- [`run_headless`](src/lib.rs#L310) omits the window and user input, uses the `MinimalPlugins` plugin set, sets up a run loop with 0 wait_duration.
+
+
+Another difference is that the original snake implementation used an event timer to spawn a food every second.
+This doesn't work when running without a fixed framerate, so we instead use a [`FoodTimer`](src/lib.rs#L63) resource to keep track of the time since the last food was spawned and [spawn food on every 7th tick](src/lib.rs#L265).
+
+### Python API
+
+We use [PyO3](https://pyo3.rs) to export the game as a Python module.
+There is currently [an issue](https://github.com/PyO3/pyo3/issues/1708) that causes long compile times when using PyO3 as a dependency.
+For this reason, we gate all the Python specific code and the PyO3 dependecy behind a "python" feature flag.
+
+```toml
+[dependencies]
+pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
+
+[features]
+python = ["pyo3", "entity-gym-rs/python"]
+```
+
+Defining the Python API requires a certain amount of boilerplate, all of which can be found in [`src/python.rs`](src/python.rs).
+
+1. We define a `Config` struct that allows us to pass in game settings from Python (not actually used for anything here).
 
 ```rust
 #[derive(Clone)]
@@ -194,36 +179,53 @@ impl Config {
 }
 ```
 
-2. We define the interface for our environment. This must match the observation and action types of the agent.
+2. The [`spawn_env`](src/python.rs#L21) function usees the [`TrainEnvBuilder`][TrainEnvBuilder] to obtain a [`TrainAgentEnv`][TrainAgentEnv]/[`TrainAgent`][TrainAgent] pair.
+It spawns a thread that an instance of the game in headless mode with the training agent and returns the `TrainAgentEnv` which will be used by the Python code to interact with this game instance.
+Any observation and action types that will be used must be registered with the `TrainEnvBuilder`.
 
 ```rust
-fn env(_config: Config) -> (TrainAgentEnv, TrainAgent) {
-    TrainEnvBuilder::default()
+pub fn spawn_env(_config: Config, seed: u64) -> TrainAgentEnv {
+    let (env, agent) = TrainEnvBuilder::default()
         .entity::<ai::Head>()
         .entity::<ai::SnakeSegment>()
         .entity::<ai::Food>()
-        .action::<Move>()
-        .build()
+        .action::<Direction>()
+        .build();
+    thread::spawn(move || {
+        super::run_headless(Box::new(agent), seed);
+    });
+    env
 }
 ```
 
-3. We define a closure that can be used to create and run a new app instance:
+3. The [`create_env`](src/python.rs#L36) function is what we will actually call from Python to create an array of game instances.
+It's largely boilerplate, the only part that's specific to the game is the `Config` type and the call to `spawn_env`.
 
 ```rust
-Arc::new(move |seed| {
-    let (env, agent) = env(config.clone());
-    thread::spawn(move || {
-        super::run_headless(AnyAgent::train(agent), seed);
-    });
-    env
-})
+#[pyfunction]
+fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
+    PyVecEnv {
+        env: VecEnv::new(
+            Arc::new(move |seed| spawn_env(config.clone(), seed)),
+            num_envs,
+            threads,
+            first_env_index,
+        ),
+    }
+}
 ```
 
-## Other notes
+Finally, the `#[pymodule]` attribute constructs the Python module and registers the `Config` type and the `create_env` function.
 
-- The original snake implementation used an event timer to spawn a food every second.
-  This doesn't really work when we want to run the game in headless mode as fast as possible, so I added counter resource to keep track of logical time and spawn a food on every 7th tick instead.
-- When training, we crate and run many parallel game instances.
-  If all of these have the same starting state, they can end up generating identical or highly correlated trajectories which degrades the training.
-  For this reason, the `run_headless` method to receives a `seed` (which will be different for each App instance) and use it to randomize the starting.
-- All the PyO3/Python code is gated by a "python" feature flag to work around [https://github.com/PyO3/pyo3/issues/1708](https://github.com/PyO3/pyo3/issues/1708).
+```rust
+#[pymodule]
+fn bevy_snake_ai(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(create_env, m)?)?;
+    m.add_class::<Config>()?;
+    Ok(())
+}
+```
+
+[TrainEnvBuilder]: https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/struct.TrainEnvBuilder.html
+[TrainAgentEnv]: https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/struct.TrainAgentEnv.html
+[TrainAgent]: https://docs.rs/entity-gym-rs/0.1.3/entity_gym_rs/agent/struct.TrainAgent.html
