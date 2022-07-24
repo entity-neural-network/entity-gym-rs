@@ -1,10 +1,11 @@
 # EntityGym for Rust
 
-[![Crates.io](https://img.shields.io/crates/v/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
-[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](./LICENSE)
-[![Crates.io](https://img.shields.io/crates/d/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs)
-[![Actions Status](https://github.com/entity-neural-network/entity-gym-rs/workflows/Test/badge.svg)](https://github.com/entity-neural-network/entity-gym-rs/actions)
+[![Crates.io](https://img.shields.io/crates/v/entity-gym-rs.svg?style=flat-square)](https://crates.io/crates/entity-gym-rs)
+[![PyPI](https://img.shields.io/pypi/v/entity-gym-rs.svg?style=flat-square)](https://pypi.org/project/entity-gym-rs/)
+[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg?style=flat-square)](./LICENSE)
+[![Crates.io](https://img.shields.io/crates/d/entity-gym-rs.svg)](https://crates.io/crates/entity-gym-rs?style=flat-square)
 [![Discord](https://img.shields.io/discord/913497968701747270?style=flat-square)](https://discord.gg/SjVqhSW4Qf)
+[![Actions Status](https://github.com/entity-neural-network/entity-gym-rs/workflows/Test/badge.svg)](https://github.com/entity-neural-network/entity-gym-rs/actions)
 
 
 [EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel entity-based abstraction for reinforcement learning environments which enables highly ergonomic and efficient training of deep reinforcement learning agents.
