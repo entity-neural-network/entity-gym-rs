@@ -9,7 +9,7 @@
 
 
 [EntityGym](https://github.com/entity-neural-network/entity-gym) is a Python library that defines a novel entity-based abstraction for reinforcement learning environments which enables highly ergonomic and efficient training of deep reinforcement learning agents.
-This crate provides bindings that allow Rust programs to be used as EntityGym training environments, and to load and run neural networks agents trained with [Entity Neural Network Trainer](https://github.com/entity-neural-network/enn-trainer) inside Rust.
+This crate provides bindings that allows Rust programs to be used as EntityGym training environments, and to load and run neural networks agents trained with [Entity Neural Network Trainer](https://github.com/entity-neural-network/enn-trainer) inside Rust.
 
 ## Overview
 
@@ -23,7 +23,7 @@ use entity_gym_rs::agent::{Agent, AgentOps, Obs, Action, Featurizable};
 enum Move { Up, Down, Left, Right }
 
 // The `Featurizable` trait converts data structures into a format that can be processed by neural networks.
-// It can be automatically derived for any struct that contains only primitive number types, booleans, or
+// It can be automatically derived for any struct that contains, only primitive number types, booleans, or
 // other `Featurizable` types.
 #[derive(Featurizable)]
 struct Player { x: i32, y: i32 }
@@ -58,6 +58,6 @@ fn main() {
 
 ## Docs
 
-- [bevy_snake](examples/bevy_snake): Example of how to use entity-gym-rs to train an AI that can play a Bevy snake game.
-- [bevy_snake_ai](https://github.com/cswinter/bevy_snake_ai): Slightly more involved example that uses self-play to create an AI opponent that a human can play against.
+- [bevy_snake](examples/bevy_snake): Example of how to use entity-gym-rs in a Bevy game.
+- [bevy_multisnake](examples/bevy_snake): Example of more advanced Bevy integration and adversarial training with multiple agents.
 - [EntityGym Rust API Docs](https://docs.rs/entity-gym-rs/0.1.0/entity_gym_rs/): Rust API reference.
