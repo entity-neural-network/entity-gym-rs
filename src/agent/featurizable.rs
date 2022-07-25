@@ -13,7 +13,7 @@ pub trait Featurizable {
     /// Returns the number of features after conversion to a vector.
     fn num_feats() -> usize;
     /// Returns a list of human readable labels corresponding to each feature.
-    fn feature_names() -> &'static [&'static str];
+    fn feature_names() -> Vec<String>;
     /// Serializes the entity into a vector of features.
     fn featurize(&self) -> Vec<f32>;
     /// Returns a human readable name for the entity.
@@ -25,7 +25,7 @@ impl<'a, T: Featurizable> Featurizable for &'a T {
         T::num_feats()
     }
 
-    fn feature_names() -> &'static [&'static str] {
+    fn feature_names() -> Vec<String> {
         T::feature_names()
     }
 
@@ -38,6 +38,7 @@ impl<'a, T: Featurizable> Featurizable for &'a T {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::*;
 
@@ -50,36 +51,67 @@ mod test {
     }
 
     #[derive(Featurizable)]
+    enum Stance {
+        Calm,
+        Wrath,
+        Divinity,
+        None,
+    }
+
+    #[derive(Featurizable)]
     struct Hero {
-        x: f32,
-        y: f32,
+        pos: Pos,
         level: u32,
         alive: bool,
+        stance: Stance,
     }
 
     #[test]
     fn test_num_feats() {
         assert_eq!(Pos::num_feats(), 2);
+        assert_eq!(Stance::num_feats(), 4);
         assert_eq!(Hero::num_feats(), 4);
     }
 
     #[test]
     fn test_feature_names() {
         assert_eq!(Pos::feature_names(), &["x", "y"]);
-        assert_eq!(Hero::feature_names(), &["x", "y", "level", "alive"]);
+        assert_eq!(
+            Stance::feature_names(),
+            &["is_Calm", "is_Wrath", "is_Divinity", "is_None"]
+        );
+        assert_eq!(
+            Hero::feature_names(),
+            &[
+                "pos.x",
+                "pos.y",
+                "level",
+                "alive",
+                "stance.is_Calm",
+                "stance.is_Wrath",
+                "stance.is_Divinity",
+                "stance.is_None"
+            ]
+        );
     }
 
     #[test]
     fn test_featurize() {
         assert_eq!(Pos::featurize(&Pos { x: 1.0, y: 2.0 }), vec![1.0, 2.0]);
+        assert_eq!(Stance::featurize(&Stance::Calm), vec![1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(Stance::featurize(&Stance::Wrath), vec![0.0, 1.0, 0.0, 0.0]);
+        assert_eq!(
+            Stance::featurize(&Stance::Divinity),
+            vec![0.0, 0.0, 1.0, 0.0]
+        );
         assert_eq!(
             Hero::featurize(&Hero {
-                x: 1.0,
-                y: 2.0,
+                pos: Pos { x: 1.0, y: 2.0 },
                 level: 3,
                 alive: true,
+                stance: Stance::None,
             }),
-            vec![1.0, 2.0, 3.0, 1.0]
+            vec![1.0, 2.0, 3.0, 1.0, 0.0, 0.0, 0.0, 1.0]
         );
     }
 
