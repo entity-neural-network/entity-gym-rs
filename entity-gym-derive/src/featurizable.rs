@@ -120,10 +120,11 @@ fn featurize_type(ty: &Type, accessor: TokenStream) -> TokenStream {
             let ty = ty.path.segments.last().unwrap();
             match ty.ident.to_string().as_str() {
                 "f32" => quote! { buffer.push(#accessor) },
-                "f64" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => {
+                "bool" => quote! { buffer.push(if #accessor { 1.0 } else { 0.0 }) },
+                "f64" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" | "usize"
+                | "isize" => {
                     quote! { buffer.push(#accessor as f32) }
                 }
-                "bool" => quote! { buffer.push(if #accessor { 1.0 } else { 0.0 }) },
                 _ => quote!(buffer.extend(#accessor.featurize())),
             }
         }
@@ -155,12 +156,22 @@ fn featurize_type(ty: &Type, accessor: TokenStream) -> TokenStream {
 
 fn is_primitive_type(ty: &TypePath) -> bool {
     let ty = ty.path.segments.last().unwrap();
-    match ty.ident.to_string().as_str() {
-        "f32" | "f64" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" | "bool" => {
-            true
-        }
-        _ => false,
-    }
+    matches!(
+        ty.ident.to_string().as_str(),
+        "f32"
+            | "f64"
+            | "u8"
+            | "u16"
+            | "u32"
+            | "u64"
+            | "i8"
+            | "i16"
+            | "i32"
+            | "i64"
+            | "bool"
+            | "usize"
+            | "isize"
+    )
 }
 
 fn feature_name_field(field: &Field) -> (TokenStream, TokenStream) {
