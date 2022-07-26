@@ -64,13 +64,15 @@ mod test {
         level: u32,
         alive: bool,
         stance: Stance,
+        cooldowns: [f32; 3],
+        prev_positions: [Pos; 2],
     }
 
     #[test]
     fn test_num_feats() {
         assert_eq!(Pos::num_feats(), 2);
         assert_eq!(Stance::num_feats(), 4);
-        assert_eq!(Hero::num_feats(), 4);
+        assert_eq!(Hero::num_feats(), 15);
     }
 
     #[test]
@@ -90,7 +92,14 @@ mod test {
                 "stance.is_Calm",
                 "stance.is_Wrath",
                 "stance.is_Divinity",
-                "stance.is_None"
+                "stance.is_None",
+                "cooldowns.0",
+                "cooldowns.1",
+                "cooldowns.2",
+                "prev_positions.0.x",
+                "prev_positions.0.y",
+                "prev_positions.1.x",
+                "prev_positions.1.y",
             ]
         );
     }
@@ -110,8 +119,10 @@ mod test {
                 level: 3,
                 alive: true,
                 stance: Stance::None,
+                cooldowns: [0.321, 1.0, 0.42],
+                prev_positions: [Pos { x: 1.0, y: 3.0 }, Pos { x: 2.0, y: 4.0 }]
             }),
-            vec![1.0, 2.0, 3.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+            vec![1.0, 2.0, 3.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.321, 1.0, 0.42, 1.0, 3.0, 2.0, 4.0]
         );
     }
 
