@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use proc_macro_error::abort;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput, Field, Ident, Type, TypePath};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, ExprLit, Field, Ident, Lit, Type, TypePath};
 
 pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
@@ -49,15 +49,17 @@ fn field_names(data: &Data, name: &Ident) -> (TokenStream, TokenStream, TokenStr
         Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => {
                 let mut names = vec![];
-                let count = fields.named.len();
+                let mut counts = vec![];
                 let mut features = vec![];
                 for field in fields.named.iter() {
-                    names.push(featurize_name(field));
+                    let (name, count) = feature_name_field(field);
+                    names.push(name);
+                    counts.push(count);
                     features.push(featurize_field(field))
                 }
 
                 (
-                    quote! { #count },
+                    quote! { #(#counts)+* },
                     quote! { #(#names)* },
                     quote! { #(#features);* },
                 )
@@ -109,16 +111,38 @@ fn field_names(data: &Data, name: &Ident) -> (TokenStream, TokenStream, TokenStr
 
 fn featurize_field(field: &Field) -> TokenStream {
     let ident = field.ident.as_ref().unwrap();
-    match &field.ty {
+    featurize_type(&field.ty, quote! { self.#ident })
+}
+
+fn featurize_type(ty: &Type, accessor: TokenStream) -> TokenStream {
+    match ty {
         Type::Path(ty) => {
             let ty = ty.path.segments.last().unwrap();
             match ty.ident.to_string().as_str() {
-                "f32" => quote! { buffer.push(self.#ident) },
+                "f32" => quote! { buffer.push(#accessor) },
                 "f64" | "u8" | "u16" | "u32" | "u64" | "i8" | "i16" | "i32" | "i64" => {
-                    quote! { buffer.push(self.#ident as f32) }
+                    quote! { buffer.push(#accessor as f32) }
                 }
-                "bool" => quote! { buffer.push(if self.#ident { 1.0 } else { 0.0 }) },
-                _ => quote!(buffer.extend(self.#ident.featurize())),
+                "bool" => quote! { buffer.push(if #accessor { 1.0 } else { 0.0 }) },
+                _ => quote!(buffer.extend(#accessor.featurize())),
+            }
+        }
+        Type::Array(ty) => {
+            let mut elems = vec![];
+            let len = match &ty.len {
+                Expr::Lit(ExprLit {
+                    lit: Lit::Int(int), ..
+                }) => match int.base10_parse::<usize>() {
+                    Ok(len) => len,
+                    Err(_) => abort!(ty.span(), "Array length must be a valid integer"),
+                },
+                x => abort!(x.span(), "Array length must be an integer literal"),
+            };
+            for i in 0..len {
+                elems.push(featurize_type(&ty.elem, quote! { #accessor[#i] }));
+            }
+            quote! {
+                #(#elems);*;
             }
         }
         t => abort!(
@@ -139,20 +163,46 @@ fn is_primitive_type(ty: &TypePath) -> bool {
     }
 }
 
-fn featurize_name(field: &Field) -> TokenStream {
+fn feature_name_field(field: &Field) -> (TokenStream, TokenStream) {
     let ident = field.ident.as_ref().unwrap().to_string();
-    match &field.ty {
+    feature_name_type(&field.ty, &ident)
+}
+
+fn feature_name_type(ty: &Type, prefix: &str) -> (TokenStream, TokenStream) {
+    match ty {
+        Type::Path(ty) if is_primitive_type(ty) => (
+            quote! { names.push(#prefix.to_string()); },
+            quote! { 1usize },
+        ),
         Type::Path(ty) => {
-            if is_primitive_type(ty) {
-                quote! { names.push(#ident.to_string()); }
-            } else {
-                let type_ident = &ty.path.segments.last().unwrap().ident;
+            let type_ident = &ty.path.segments.last().unwrap().ident;
+            (
                 quote! {
                     for name in #type_ident::feature_names() {
-                        names.push(format!("{}.{}", #ident, name));
+                        names.push(format!("{}.{}", #prefix, name));
                     }
-                }
+                },
+                quote! { #type_ident::num_feats() },
+            )
+        }
+        Type::Array(ty) => {
+            let mut names = vec![];
+            let mut counts = vec![];
+            let len = match &ty.len {
+                Expr::Lit(ExprLit {
+                    lit: Lit::Int(int), ..
+                }) => match int.base10_parse::<usize>() {
+                    Ok(len) => len,
+                    Err(_) => abort!(ty.span(), "Array length must be a valid integer"),
+                },
+                x => abort!(x.span(), "Array length must be an integer literal"),
+            };
+            for i in 0..len {
+                let (name, count) = feature_name_type(&ty.elem, &format!("{}.{}", prefix, i));
+                names.push(name);
+                counts.push(count);
             }
+            (quote! { #(#names)* }, quote! { #(#counts)+* })
         }
         t => abort!(
             t,
