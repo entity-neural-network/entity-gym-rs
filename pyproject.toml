@@ -2,9 +2,9 @@
 name = "entity-gym-rs"
 requires-python = ">=3.7"
 dependencies = [
-    "numpy~=1.22.3",
-    "ragged-buffer~=0.3.7",
-    "entity-gym~=0.1.5",
+    "numpy^=1.22.3",
+    "ragged-buffer^=0.4.3",
+    "entity-gym^=0.1.9",
 ]
 
 [build-system]
