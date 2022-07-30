@@ -42,6 +42,7 @@ impl VecEnv {
         create_env: Arc<dyn Fn(u64) -> T + Send + Sync>,
         num_envs: usize,
         threads: usize,
+        // Used to offset seeding when running multiple sets of environments in different processes.
         first_env_index: u64,
     ) -> VecEnv {
         let parker = Parker::new();
@@ -135,7 +136,7 @@ impl VecEnvInner {
         thread_id: usize,
         nthread: usize,
         total_envs: usize,
-        env_offset: u64,
+        seed_offset: u64,
     ) {
         let local_envs = total_envs / nthread
             + if thread_id < total_envs % nthread {
@@ -153,11 +154,10 @@ impl VecEnvInner {
         );
         let mut agents_per_env = None;
         let mut envs = vec![];
-        let env_offset =
-            thread_id * (total_envs / nthread) + total_envs % nthread + env_offset as usize;
+        let env_offset = thread_id * (total_envs / nthread) + total_envs % nthread;
         let mut env_count = 0;
         while env_count < local_envs {
-            let env = create_env((envs.len() + env_offset).try_into().unwrap());
+            let env = create_env((envs.len() as u64 + seed_offset).try_into().unwrap());
             match &mut agents_per_env {
                 None => agents_per_env = Some(env.agents()),
                 Some(n) => assert_eq!(env.agents(), *n),
