@@ -1377,7 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "entity-gym-rs"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "anyhow",
  "arrayvec",
