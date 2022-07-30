@@ -25,10 +25,10 @@ Running the game with random actions:
 cargo run --bin main
 ```
 
-Run with a trained neural network ([download link](https://www.dropbox.com/sh/laja5te8t9uojnw/AADqDndrEOzRgtoVzv8EK8Voa?dl=0)):
+Run with a trained neural network ([download link](https://www.dropbox.com/s/ctnrkwyz8d3vygk/bevy_snake1m.roguenet?dl=1)):
 
 ```shell
-cargo run -- --agent-path bevy_snake1m/latest-step000000999424
+cargo run -- --agent-path bevy_snake1m.roguenet
 ```
 
 Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [poetry](https://python-poetry.org/) and only tested on Linux. Nvidia GPU with working CUDA installation recommended.):
