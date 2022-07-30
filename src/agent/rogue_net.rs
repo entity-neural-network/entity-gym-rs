@@ -1,8 +1,8 @@
 use ndarray::Array2;
 use rogue_net::RogueNet;
 
-use super::Obs;
 use super::{ActionReceiver, Agent};
+use super::{Featurizable, Obs};
 
 /// Agent that implements the [RogueNet entity neural network](https://github.com/entity-neural-network/rogue-net).
 /// Can be loaded from checkpoints produced by [enn-trainer](https://github.com/entity-neural-network/enn-trainer).
@@ -29,6 +29,20 @@ impl RogueNetAgent {
     pub fn load_archive<R: std::io::Read>(reader: R) -> Result<Self, std::io::Error> {
         let net = RogueNet::load_archive(reader)?;
         Ok(RogueNetAgent { net })
+    }
+
+    /// Adapts the network to a changed observation space.
+    ///
+    /// If you trained a network with a different observation space, you can adapt it to the new observation space.
+    /// For this to work, the new set of features of the observation space must be a superset of the old set of features.
+    pub fn with_feature_adaptor<E: Featurizable>(mut self) -> Self {
+        self.net = self.net.with_obs_filter(
+            [(E::name().to_string(), E::feature_names())]
+                .iter()
+                .cloned()
+                .collect(),
+        );
+        self
     }
 }
 

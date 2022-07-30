@@ -157,7 +157,7 @@ impl VecEnvInner {
         let env_offset = thread_id * (total_envs / nthread) + total_envs % nthread;
         let mut env_count = 0;
         while env_count < local_envs {
-            let env = create_env((envs.len() as u64 + seed_offset).try_into().unwrap());
+            let env = create_env(envs.len() as u64 + seed_offset);
             match &mut agents_per_env {
                 None => agents_per_env = Some(env.agents()),
                 Some(n) => assert_eq!(env.agents(), *n),

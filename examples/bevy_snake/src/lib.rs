@@ -2,13 +2,10 @@ pub mod ai;
 #[cfg(feature = "python")]
 pub mod python;
 
-use std::time::Duration;
-
 use ai::{snake_movement_agent, Player};
-use bevy::app::ScheduleRunnerSettings;
 use bevy::core::FixedTimestep;
 use bevy::prelude::*;
-use entity_gym_rs::agent::{self, Action, Obs, TrainAgent};
+use entity_gym_rs::agent::{self, Action, Obs};
 #[cfg(feature = "python")]
 use python::Config;
 use rand::prelude::{random, SmallRng};
@@ -333,7 +330,9 @@ pub fn run(agent_path: Option<String>) {
 }
 
 #[cfg(feature = "python")]
-pub fn run_headless(_: Config, agent: TrainAgent, seed: u64) {
+pub fn run_headless(_: Config, agent: entity_gym_rs::agent::TrainAgent, seed: u64) {
+    use bevy::app::ScheduleRunnerSettings;
+    use std::time::Duration;
     base_app(&mut App::new(), seed, None)
         .insert_resource(ScheduleRunnerSettings::run_loop(Duration::from_secs_f64(
             0.0,
