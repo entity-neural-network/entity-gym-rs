@@ -61,3 +61,4 @@ fn main() {
 - [bevy_snake](examples/bevy_snake): Example of how to use entity-gym-rs in a Bevy game.
 - [bevy-snake-ai](https://github.com/cswinter/bevy-snake-ai): More complex Bevy application with adversarial training of multiple agents.
 - [EntityGym Rust API Docs](https://docs.rs/entity-gym-rs/0.1.0/entity_gym_rs/): Rust API reference.
+- If you have any questions, you can also get help on [our discord server](https://discord.gg/SjVqhSW4Qf)
