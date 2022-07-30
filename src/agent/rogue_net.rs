@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use ndarray::Array2;
 use rogue_net::RogueNet;
 
@@ -13,9 +15,15 @@ pub struct RogueNetAgent {
 
 impl RogueNetAgent {
     /// Loads a neural network agent from an [enn-trainer](https://github.com/entity-neural-network/enn-trainer) checkpoint directory.
-    pub fn load<P: AsRef<std::path::Path>>(path: P) -> Self {
-        RogueNetAgent {
-            net: RogueNet::load(path),
+    pub fn load<P: AsRef<std::path::Path>>(path: P) -> Result<Self, std::io::Error> {
+        let path = path.as_ref();
+        match path.extension() {
+            Some(ext) if ext == "roguent" => Ok(RogueNetAgent {
+                net: RogueNet::load_archive(File::open(path)?)?,
+            }),
+            _ => Ok(RogueNetAgent {
+                net: RogueNet::load(path),
+            }),
         }
     }
 

@@ -149,7 +149,7 @@ pub fn random_seeded(seed: u64) -> Box<dyn Agent> {
 
 /// Loads an agent from a checkpoint directory.
 pub fn load<P: AsRef<Path>>(path: P) -> Box<dyn Agent> {
-    Box::new(RogueNetAgent::load(path))
+    Box::new(RogueNetAgent::load(path).unwrap())
 }
 
 /// Loads an agent from an archive of a checkpoint directory.
