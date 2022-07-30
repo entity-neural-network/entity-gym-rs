@@ -3,8 +3,8 @@ pub mod ai;
 pub mod python;
 
 use ai::{snake_movement_agent, Player};
-use bevy::core::FixedTimestep;
 use bevy::prelude::*;
+use bevy::time::FixedTimestep;
 use entity_gym_rs::agent::{self, Action, Obs};
 #[cfg(feature = "python")]
 use python::Config;
@@ -81,7 +81,7 @@ impl Direction {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
 
 fn spawn_snake(
