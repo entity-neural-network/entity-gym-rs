@@ -1,7 +1,7 @@
-# Example Snake Game with Bevy
+# Creating an AI to Play a Bevy Snake Game
 
-This example shows how to expose a Bevy app as an entity-gym environment, use entity-gym to train a neural network to play snake, and then run the resulting neural network inside a Bevy game.
-The snake implementation is based on  [Marcus Buffett's snake clone](https://mbuffett.com/posts/bevy-snake-tutorial/).
+This example shows how to expose a Bevy app as an [entity-gym](https://github.com/entity-neural-network/entity-gym) environment, use [enn-trainer](https://github.com/entity-neural-network/enn-trainer) to train a neural network to play snake, and then run the resulting neural network as part of a Bevy game.
+The snake implementation is lightly modified from [Marcus Buffett's snake clone](https://mbuffett.com/posts/bevy-snake-tutorial/).
 
 ## Overview
 
