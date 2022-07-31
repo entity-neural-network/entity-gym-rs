@@ -54,7 +54,7 @@ fn main() {
         ]);
     
     // To obtain an action from an agent, we simple call the `act` method
-    with the observation we constructed.
+    // with the observation we constructed.
     let action = agent.act::<Move>(obs);
     println!("{:?}", action);
 }
