@@ -12,18 +12,23 @@ This crate provides bindings that allows Rust programs to be used as EntityGym t
 
 ## Overview
 
-The entity-gym-rs crate defines a high-level API for neural network agents which allows them to directly interact with Rust data structures.
+The core abstraction in entity-gym-rs is the [`Agent` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.AgentOps.html).
+It defines a high-level API for neural network agents which allows them to directly interact with Rust data structures.
+To use any of the `Agent` implementations provided by entity-gym-rs, you just need to implement the `Action` and `Featurizable` traits, which define what information the agent can observe and what actions it can take:
+
+- The [`Action` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Action.html) allows a Rust type to be returned as an action by an `Agent`. This trait can be derived automatically for enums with only unit variants.
+- The [`Featurizable` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) converts objects into a format that can be processed by neural networks. It can be derived for most fixed-size `struct`s and enums with unit variants. `Agent`s can observe collections containing any number of `Featurizable` objects.
+
+## Example
+
+Basic example that demonstrates how to construct an observation and sample a random action from an `Agent`:
 
 ```rust
 use entity_gym_rs::agent::{Agent, AgentOps, Obs, Action, Featurizable};
 
-// To define what actions the agent can take, we create a type that implements the `Action` trait. 
-// The `Action` trait can be derived automatically for enums with only unit variants.
 #[derive(Action, Debug)]
 enum Move { Up, Down, Left, Right }
 
-// The `Featurizable` trait converts data structures into a format that can be processed by neural networks.
-// It can be derived for most fixed-size `struct`s and enums with unit variants. 
 #[derive(Featurizable)]
 struct Player { x: i32, y: i32 }
 
@@ -40,8 +45,7 @@ fn main() {
     // Alternatively, load a trained neural network agent from a checkpoint.
     // let mut agent = Agent::load("agent");
 
-    // The neural network agents supported by entity-gym can process observations consisting
-    // of any number of `Featurizable` objects.
+    // Construct an observation with one `Player` entity and two `Cake entities.
     let obs = Obs::new(0.0)
         .entities([Player { x: 0, y: 0 }])
         .entities([
@@ -49,7 +53,8 @@ fn main() {
             Cake { x: 10, y: 42, size: 12 },
         ]);
     
-    // To obtain an action from an agent, we simple call the `act` method with the observation we constructed.
+    // To obtain an action from an agent, we simple call the `act` method
+    with the observation we constructed.
     let action = agent.act::<Move>(obs);
     println!("{:?}", action);
 }
