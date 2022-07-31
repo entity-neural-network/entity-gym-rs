@@ -18,7 +18,7 @@ impl RogueNetAgent {
     pub fn load<P: AsRef<std::path::Path>>(path: P) -> Result<Self, std::io::Error> {
         let path = path.as_ref();
         match path.extension() {
-            Some(ext) if ext == "roguent" => Ok(RogueNetAgent {
+            Some(ext) if ext == "roguenet" => Ok(RogueNetAgent {
                 net: RogueNet::load_archive(File::open(path)?)?,
             }),
             _ => Ok(RogueNetAgent {
