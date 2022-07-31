@@ -55,7 +55,7 @@ fn main() {
 }
 ```
 
-For a more complete example that includes training, see [examples/bevy_snake](examples/bevy_snake).  
+For a more complete example that includes training a neural network to play Snake, see [examples/bevy_snake](examples/bevy_snake).  
 
 ## Docs
 
