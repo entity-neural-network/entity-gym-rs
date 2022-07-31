@@ -17,7 +17,7 @@ It defines a high-level API for neural network agents which allows them to direc
 To use any of the `Agent` implementations provided by entity-gym-rs, you just need to derive the `Action` and `Featurizable` traits, which define what information the agent can observe and what actions it can take:
 
 - The [`Action` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Action.html) allows a Rust type to be returned as an action by an `Agent`. This trait can be derived automatically for enums with only unit variants.
-- The [`Featurizable` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) converts objects into a format that can be processed by neural networks. It can be derived for most fixed-size `struct`s and enums with unit variants. `Agent`s can observe collections containing any number of `Featurizable` objects.
+- The [`Featurizable` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) converts objects into a format that can be processed by neural networks. It can be derived for most fixed-size `struct`s, and for `enum`s with unit variants. `Agent`s can observe collections containing any number of `Featurizable` objects.
 
 ## Example
 
