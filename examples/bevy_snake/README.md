@@ -8,7 +8,7 @@ The snake implementation is lightly modified from [Marcus Buffett's snake clone]
 The majority of the code is mostly unchanged from the [original implementation](https://github.com/marcusbuffett/bevy_snake/tree/c0344a40d28eb321493ee950e64ecc5bca6cc5a4):
 - The `main.rs` file has been renamed to `lib.rs`, with the new entry point moved to `bin/main.rs`.
 - The new AI controller lives in [`src/ai.rs`](src/ai.rs).
-- The additional code required for training is in [`src/python.rs`](src/python.rs), which defines a PyO3 Python API. The [`train.py`](train.py) is simple script to run training, [`train.ron`](train.ron) defines some hyperparameters, and [`pyproject.toml`](pyproject.toml)/[`poetry.lock`](poetry.lock) define required Python dependencies with the [Poetry](https://python-poetry.org/) package manager.
+- The additional code required for training is in [`src/python.rs`](src/python.rs), which defines a PyO3 Python API. [`train.py`](train.py) is a simple script that runs training, [`train.ron`](train.ron) defines some hyperparameters, and [`pyproject.toml`](pyproject.toml)/[`poetry.lock`](poetry.lock) define required Python dependencies using the [Poetry](https://python-poetry.org/) package manager.
 
 ## Usage
 
