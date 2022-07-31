@@ -31,10 +31,11 @@ Run with a trained neural network ([download link](https://www.dropbox.com/s/ctn
 cargo run -- --agent-path bevy_snake1m.roguenet
 ```
 
-Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [poetry](https://python-poetry.org/) and only tested on Linux. Nvidia GPU with working CUDA installation recommended.):
+Training a new agent with [enn-trainer](https://github.com/entity-neural-network/enn-trainer) (requires [Poetry](https://python-poetry.org/), only tested on Linux, Nvidia GPU recommended):
 
 ```shell
 poetry install
+# Replace "cu113" with "cpu" to train on CPU.
 poetry run pip install torch==1.12.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 poetry run pip install torch-scatter -f https://data.pyg.org/whl/torch-1.12.0+cu113.html
 poetry run maturin develop --release --features=python
@@ -54,7 +55,7 @@ pub struct Player(pub Box<dyn Agent>);
 
 The [`Agent` trait](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Agent.html) abstracts over different AI implementations provided by entity-gym-rs.
 
-Depending on how the game is configured, we instantiate the `Player` resource in [`src/lib.rs`](src/lib.rs#L319-L322) as either a neural network loaded from a file, or a agent that takes completely random action.
+Depending on how the game is configured, we instantiate the `Player` resource in [`src/lib.rs`](src/lib.rs#L319-L322) as either a neural network loaded from a file, or an agent that takes random actions.
 
 ```rust
         .insert_non_send_resource(match agent_path {
@@ -78,7 +79,7 @@ Since we want the agent to grow the snake as long as possible, we use the number
 
 The `entities` method allows us to make different entities visible to the AI.
 The argument to `entities` is an iterator over [`Featurizable`](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) items, which is a trait that allows structs to be converted into a representation that can be processed by the neural network.
-The [`Featurizable`](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) trait can be derived automatically for enums with unit variants and any structs that contain only primitive numbers types, booleans, and other types implementing `Featurizable`:
+The [`Featurizable`](https://docs.rs/entity-gym-rs/latest/entity_gym_rs/agent/trait.Featurizable.html) trait can be derived automatically for enums with unit variants and most fixed-size structs:
 
 ```rust
 #[derive(Featurizable)]
@@ -179,10 +180,10 @@ impl Config {
 }
 ```
 
-The [`create_env`](src/python.rs#L21) function usees the [`TrainEnvBuilder`][TrainEnvBuilder] to construct a [`PyVecEnv`][PyVecEnv] which runs multiple instances of the game in parallel and will be used directly by the Python training framework in [train.py](train.py).
+The [`create_env`](src/python.rs#L21) function uses the [`TrainEnvBuilder`][TrainEnvBuilder] to construct a [`PyVecEnv`][PyVecEnv] which runs multiple instances of the game in parallel and will be used directly by the Python training framework in [train.py](train.py).
 The `TrainEnvBuilder` requires us to declar the types of all the entities and actions that we want to use in the game using the `entity` and `action` methods.
 When we pass the [`run_headless`](src/lib.rs#L310) function to `build`, the `TrainEnvBuilder` will spawn one thread for each environment that calls `run_headless` with a clone of the `Config`, a `TrainAgent` that connects the game to the Python training framework, and a random seed.
-The `num_envs`, `threads`, and `first_env_index` parameters are simply forwarded from Python and allow the training framework to control the level of parallelism and number of parallel game instances.
+The `num_envs`, `threads`, and `first_env_index` parameters are simply forwarded from Python and allow the training framework to control the number of worker threads and game instances.
 
 ```rust
 #[pyfunction]
