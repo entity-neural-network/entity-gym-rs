@@ -176,7 +176,18 @@ impl VecEnvInner {
                     action_masks.clear();
                     for (i, env) in envs.iter_mut().enumerate() {
                         let env_id = i * agents_per_env + env_offset;
-                        let obs = env.reset();
+                        let mut obs = env.reset();
+                        let mut done = obs[0].done;
+                        while done {
+                            let mut onew = env.reset();
+                            done = onew[0].done;
+                            for i in 0..obs.len() {
+                                onew[i].reward = obs[i].reward;
+                                onew[i].done = obs[i].done;
+                                onew[i].metrics.extend(obs[i].metrics.clone());
+                            }
+                            obs = onew;
+                        }
                         for (j, obs) in obs.into_iter().enumerate() {
                             action_masks.push(obs.actions.clone());
                             self.obs[env_id + j].store(Some(obs), Ordering::SeqCst);
