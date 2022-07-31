@@ -1,6 +1,6 @@
 [[package]]
 name = "absl-py"
-version = "1.1.0"
+version = "1.2.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
 category = "main"
 optional = false
@@ -25,17 +25,17 @@ tz = ["python-dateutil"]
 
 [[package]]
 name = "attrs"
-version = "21.4.0"
+version = "22.1.0"
 description = "Classes Without Boilerplate"
 category = "main"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = ">=3.5"
 
 [package.extras]
-dev = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "mypy", "pytest-mypy-plugins", "zope.interface", "furo", "sphinx", "sphinx-notfound-page", "pre-commit", "cloudpickle"]
+dev = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "mypy (>=0.900,!=0.940)", "pytest-mypy-plugins", "zope.interface", "furo", "sphinx", "sphinx-notfound-page", "pre-commit", "cloudpickle"]
 docs = ["furo", "sphinx", "zope.interface", "sphinx-notfound-page"]
-tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "mypy", "pytest-mypy-plugins", "zope.interface", "cloudpickle"]
-tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "six", "mypy", "pytest-mypy-plugins", "cloudpickle"]
+tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "mypy (>=0.900,!=0.940)", "pytest-mypy-plugins", "zope.interface", "cloudpickle"]
+tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "mypy (>=0.900,!=0.940)", "pytest-mypy-plugins", "cloudpickle"]
 
 [[package]]
 name = "autopage"
@@ -203,7 +203,7 @@ test = ["pytest", "black"]
 
 [[package]]
 name = "enn-trainer"
-version = "0.1.8"
+version = "0.1.9"
 description = "PPO and supervised training loops compatible with entity-gym"
 category = "main"
 optional = false
@@ -211,22 +211,22 @@ python-versions = ">=3.7.1,<3.10"
 
 [package.dependencies]
 click = ">=8.0.4,<9.0.0"
-entity-gym = ">=0.1.4,<0.2.0"
+entity-gym = ">=0.1.6,<0.2.0"
 hyperstate = ">=0.4.1,<0.5.0"
 moviepy = ">=1.0.3,<2.0.0"
 msgpack = ">=1.0.3,<2.0.0"
 msgpack-numpy = ">=0.4.7,<0.5.0"
 numpy = ">=1.21.4,<2.0.0"
 optuna = ">=2.10.0,<3.0.0"
-ragged-buffer = ">=0.3.9,<0.4.0"
-rogue-net = ">=0.1.5,<0.2.0"
+ragged-buffer = ">=0.4.3,<0.5.0"
+rogue-net = ">=0.1.6,<0.2.0"
 tensorboard = ">=2.7.0,<3.0.0"
 tqdm = ">=4.62.3,<5.0.0"
 wandb = ">=0.12.7,<0.13.0"
 
 [[package]]
 name = "entity-gym"
-version = "0.1.5"
+version = "0.1.6"
 description = "Entity Gym"
 category = "main"
 optional = false
@@ -237,26 +237,21 @@ click = ">=8.1.3,<9.0.0"
 cloudpickle = ">=2.0.0,<3.0.0"
 msgpack = ">=1.0.3,<2.0.0"
 msgpack-numpy = ">=0.4.7,<0.5.0"
-ragged-buffer = ">=0.3.9,<0.4.0"
+ragged-buffer = ">=0.4.3,<0.5.0"
 tqdm = ">=4.63.1,<5.0.0"
 
 [[package]]
 name = "entity-gym-rs"
-version = "0.1.0"
-description = ""
+version = "0.4.2"
+description = "Rust bindings for the entity-gym library"
 category = "main"
 optional = false
-python-versions = ">=3.8.0,<3.10"
-develop = true
+python-versions = ">=3.7"
 
 [package.dependencies]
-entity-gym = "^0.1.5"
-numpy = "^1.22.3"
-ragged-buffer = "^0.3.7"
-
-[package.source]
-type = "directory"
-url = "../.."
+entity-gym = ">=0.1.6,<0.2.0"
+numpy = ">=1.22.3,<1.23.0"
+ragged-buffer = ">=0.4.3,<0.5.0"
 
 [[package]]
 name = "gitdb"
@@ -328,7 +323,7 @@ docs = ["sphinx"]
 
 [[package]]
 name = "grpcio"
-version = "1.47.0"
+version = "1.48.0"
 description = "HTTP/2-based RPC framework"
 category = "main"
 optional = false
@@ -338,7 +333,7 @@ python-versions = ">=3.6"
 six = ">=1.5.2"
 
 [package.extras]
-protobuf = ["grpcio-tools (>=1.47.0)"]
+protobuf = ["grpcio-tools (>=1.48.0)"]
 
 [[package]]
 name = "hyperstate"
@@ -367,7 +362,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "imageio"
-version = "2.19.3"
+version = "2.20.0"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
 category = "main"
 optional = false
@@ -420,7 +415,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 
 [[package]]
 name = "importlib-resources"
-version = "5.8.0"
+version = "5.9.0"
 description = "Read resources from Python packages"
 category = "main"
 optional = false
@@ -430,8 +425,8 @@ python-versions = ">=3.7"
 zipp = {version = ">=3.1.0", markers = "python_version < \"3.10\""}
 
 [package.extras]
-docs = ["sphinx", "jaraco.packaging (>=9)", "rst.linker (>=1.9)"]
-testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
+docs = ["sphinx", "jaraco.packaging (>=9)", "rst.linker (>=1.9)", "jaraco.tidelift (>=1.4)"]
+testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
 
 [[package]]
 name = "mako"
@@ -473,7 +468,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "maturin"
-version = "0.13.0"
+version = "0.13.1"
 description = "Build and publish crates with pyo3, rust-cpython and cffi bindings as well as rust binaries as python packages"
 category = "main"
 optional = false
@@ -483,8 +478,8 @@ python-versions = ">=3.7"
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
-zig = ["ziglang (>=0.9.0,<0.10.0)"]
 patchelf = ["patchelf"]
+zig = ["ziglang (>=0.9.0,<0.10.0)"]
 
 [[package]]
 name = "moviepy"
@@ -533,7 +528,7 @@ numpy = ">=1.9.0"
 
 [[package]]
 name = "numpy"
-version = "1.23.1"
+version = "1.22.4"
 description = "NumPy is the fundamental package for array computing with Python."
 category = "main"
 optional = false
@@ -745,11 +740,11 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "ragged-buffer"
-version = "0.3.9"
+version = "0.4.3"
 description = "Efficient RaggedBuffer datatype that implements 3D arrays with variable-length 2nd dimension."
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 numpy = ">=1.21,<2.0"
@@ -789,19 +784,19 @@ rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 
 [[package]]
 name = "rogue-net"
-version = "0.1.5"
+version = "0.1.6"
 description = "Ragged batch transformer implementation that is compatible with entity-gym"
 category = "main"
 optional = false
 python-versions = ">=3.7.1,<3.10"
 
 [package.dependencies]
-entity-gym = ">=0.1.4,<0.2.0"
-ragged-buffer = ">=0.3.9,<0.4.0"
+entity-gym = ">=0.1.6,<0.2.0"
+ragged-buffer = ">=0.4.3,<0.5.0"
 
 [[package]]
 name = "rsa"
-version = "4.8"
+version = "4.9"
 description = "Pure-Python RSA implementation"
 category = "main"
 optional = false
@@ -812,18 +807,18 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "scipy"
-version = "1.8.1"
+version = "1.9.0"
 description = "SciPy: Scientific Library for Python"
 category = "main"
 optional = false
-python-versions = ">=3.8,<3.11"
+python-versions = ">=3.8,<3.12"
 
 [package.dependencies]
-numpy = ">=1.17.3,<1.25.0"
+numpy = ">=1.18.5,<1.25.0"
 
 [[package]]
 name = "sentry-sdk"
-version = "1.7.2"
+version = "1.9.0"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -841,6 +836,7 @@ celery = ["celery (>=3)"]
 chalice = ["chalice (>=1.16.0)"]
 django = ["django (>=1.8)"]
 falcon = ["falcon (>=1.4)"]
+fastapi = ["fastapi (>=0.79.0)"]
 flask = ["flask (>=0.11)", "blinker (>=1.1)"]
 httpx = ["httpx (>=0.16.0)"]
 pure_eval = ["pure-eval", "executing", "asttokens"]
@@ -849,15 +845,16 @@ quart = ["quart (>=0.16.1)", "blinker (>=1.1)"]
 rq = ["rq (>=0.6)"]
 sanic = ["sanic (>=0.8)"]
 sqlalchemy = ["sqlalchemy (>=1.2)"]
+starlette = ["starlette (>=0.19.1)"]
 tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "setproctitle"
-version = "1.2.3"
+version = "1.3.0"
 description = "A Python module to customize the process title"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.extras]
 test = ["pytest"]
@@ -1001,7 +998,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "urllib3"
-version = "1.26.10"
+version = "1.26.11"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 category = "main"
 optional = false
@@ -1056,11 +1053,14 @@ python-versions = "*"
 
 [[package]]
 name = "werkzeug"
-version = "2.1.2"
+version = "2.2.1"
 description = "The comprehensive WSGI web application library."
 category = "main"
 optional = false
 python-versions = ">=3.7"
+
+[package.dependencies]
+MarkupSafe = ">=2.1.1"
 
 [package.extras]
 watchdog = ["watchdog"]
@@ -1080,7 +1080,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<3.10"
-content-hash = "d961ca88e8a7df8597786ee17ab23a7119a24255d14270daac55fece4e602c85"
+content-hash = "e7fa5d1d6043c2e2815888edc079370718138a603bc18166c041309015dc7029"
 
 [metadata.files]
 absl-py = []
