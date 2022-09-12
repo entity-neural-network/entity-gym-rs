@@ -154,8 +154,13 @@ This doesn't work when running without a fixed framerate, so we instead use a [`
 We use [PyO3](https://pyo3.rs) to export the game as a Python module.
 There is currently [an issue](https://github.com/PyO3/pyo3/issues/1708) that causes long compile times when using PyO3 as a dependency.
 For this reason, we gate all the Python specific code and the PyO3 dependecy behind a "python" feature flag.
+We also need to build the crate as a `cdylib`.
 
 ```toml
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "bevy_snake_enn"
+
 [dependencies]
 pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
 
