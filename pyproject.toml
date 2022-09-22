@@ -14,3 +14,18 @@ build-backend = "maturin"
 [tool.maturin]
 features  = ["python"]
 profile = "release"
+
+
+[tool.poetry]
+name = "entity-gym-rs"
+version = "0.1.0"
+description = ""
+authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8.0,<3.10"
+enn-trainer = "^0.1.10"
+maturin = "^0.13.0"
+hyperstate = "^0.4.1"
+entity-gym-rs = "^0.3.3"
+
