@@ -2992,9 +2992,9 @@ dependencies = [
 
 [[package]]
 name = "rogue-net"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cc06f2e7a31390329d448fdf74a691da3ff1674042cec450581ca27c9958163"
+checksum = "d8ae5feb3f89e7b18e06f04f86078065483df9b6fd35d2af5c99e17a1fa41c5c"
 dependencies = [
  "clap",
  "env_logger 0.9.0",
@@ -3539,7 +3539,7 @@ dependencies = [
  "js-sys",
  "log",
  "naga",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "raw-window-handle",
  "smallvec",
  "wasm-bindgen",
@@ -3565,7 +3565,7 @@ dependencies = [
  "fxhash",
  "log",
  "naga",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "profiling",
  "raw-window-handle",
  "smallvec",
@@ -3602,7 +3602,7 @@ dependencies = [
  "metal",
  "naga",
  "objc",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "profiling",
  "range-alloc",
  "raw-window-handle",

@@ -61,7 +61,7 @@ struct Food;
 
 struct FoodTimer(u32);
 
-#[derive(PartialEq, Copy, Clone, Debug, Action)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Action)]
 pub enum Direction {
     Left,
     Up,

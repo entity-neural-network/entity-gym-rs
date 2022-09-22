@@ -66,7 +66,7 @@ impl Agent for RogueNetAgent {
                 )
             })
             .collect();
-        let (_probs, acts) = self.net.forward(&entities);
+        let (_probs, acts) = self.net.forward(entities);
         Some(acts[0])
     }
 
