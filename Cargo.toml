@@ -1,6 +1,6 @@
 [package]
 name = "entity-gym-rs"
-version = "0.4.4"
+version = "0.5.0"
 authors = ["Clemens Winter <clemenswinter1@gmail.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
