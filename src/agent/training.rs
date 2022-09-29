@@ -20,7 +20,7 @@ use super::{ActionReceiver, Agent, Featurizable, InnerActionReceiver, Obs};
 pub struct TrainAgentEnv {
     obs_space: ObsSpace,
     action_space: Vec<(String, ActionSpace)>,
-    action: Vec<Sender<u64>>,
+    action: Vec<Sender<Vec<u64>>>,
     observation: Vec<Receiver<Observation>>,
 }
 
@@ -29,7 +29,7 @@ pub struct TrainAgentEnv {
 /// Train agents are created when constructing a Python training environment with [`TrainEnvBuilder`].
 #[cfg_attr(docsrs, doc(cfg(feature = "python")))]
 pub struct TrainAgent {
-    action: Receiver<u64>,
+    action: Receiver<Vec<u64>>,
     observation: Sender<Observation>,
     entity_names: Vec<String>,
     score: Option<f32>,
@@ -144,7 +144,9 @@ impl Environment for TrainAgentEnv {
             match &action[0] {
                 Some(Action::Categorical { actors: _, action }) => {
                     assert!(action.len() == 1);
-                    sender.send(action[0] as u64).unwrap();
+                    sender
+                        .send(action.iter().map(|a| *a as u64).collect())
+                        .unwrap();
                 }
                 Some(_) => panic!("unexpected action"),
                 None => {
@@ -160,7 +162,7 @@ impl Environment for TrainAgentEnv {
 }
 
 impl Agent for TrainAgent {
-    fn act_dyn(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
+    fn act_dyn(&mut self, action: &str, _num_actions: u64, obs: &Obs) -> Option<Vec<u64>> {
         self.send_obs_raw(action, obs);
         let remaining = self.obs_remaining[self.iremaining].load(Ordering::SeqCst);
         if remaining != 0 && (remaining != self.agent_count || self.agent_count == 1) {
@@ -220,9 +222,9 @@ impl TrainAgent {
         let mut counts = vec![];
         for name in &self.entity_names {
             match obs.entities.get(name.as_str()) {
-                Some((feats, count, _)) => {
-                    data.extend(feats.iter());
-                    counts.push(*count);
+                Some(f) => {
+                    data.extend(f.features.iter());
+                    counts.push(f.num_entities);
                 }
                 None => {
                     counts.push(0);
