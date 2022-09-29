@@ -2992,9 +2992,9 @@ dependencies = [
 
 [[package]]
 name = "rogue-net"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8ae5feb3f89e7b18e06f04f86078065483df9b6fd35d2af5c99e17a1fa41c5c"
+checksum = "293168f2198970ae2cfc5dea3e34153a64b506a57ba65f142a30fbdcab9ec2e5"
 dependencies = [
  "clap",
  "env_logger 0.9.0",

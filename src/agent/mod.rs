@@ -36,7 +36,7 @@ pub use training::{TrainAgent, TrainAgentEnv, TrainEnvBuilder};
 /// Every [`Agent`] also implements the [`AgentOps`] trait which provides more ergonomic typed versions of the [`Agent::act_dyn`] and [`Agent::act_async_dyn`] methods.
 pub trait Agent {
     /// Returns an action for the given observation.
-    fn act_dyn(&mut self, action: &str, num_actions: u64, obs: &Obs) -> Option<u64>;
+    fn act_dyn(&mut self, action: &str, num_actions: u64, obs: &Obs) -> Option<Vec<u64>>;
 
     /// Returns receiver that can be blocked on to receive an action for the given observation.
     #[must_use]
@@ -49,7 +49,7 @@ pub trait Agent {
 /// Augments the [`Agent`] trait with more ergonomic typed versions of the [`Agent::act_dyn`] and [`Agent::act_async_dyn`] methods.
 pub trait AgentOps {
     /// Returns an action for the given observation.
-    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<A>;
+    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<Vec<A>>;
 
     /// Returns receiver that can be blocked on to receive an action for the given observation.
     #[must_use]
@@ -57,9 +57,9 @@ pub trait AgentOps {
 }
 
 impl<T: Agent> AgentOps for T {
-    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<A> {
+    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<Vec<A>> {
         self.act_dyn(A::name(), A::num_actions(), obs)
-            .map(A::from_u64)
+            .map(|x| x.into_iter().map(A::from_u64).collect())
     }
 
     #[must_use]
@@ -70,9 +70,9 @@ impl<T: Agent> AgentOps for T {
 }
 
 impl AgentOps for dyn Agent {
-    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<A> {
+    fn act<'a, A: Action<'a>>(&mut self, obs: &Obs) -> Option<Vec<A>> {
         self.act_dyn(A::name(), A::num_actions(), obs)
-            .map(A::from_u64)
+            .map(|x| x.into_iter().map(A::from_u64).collect())
     }
 
     #[must_use]
@@ -91,17 +91,17 @@ enum InnerActionReceiver<A> {
     // Variant is only constructed when cfg(feature = "python").
     #[allow(dead_code)]
     Receiver {
-        receiver: Receiver<u64>,
+        receiver: Receiver<Vec<u64>>,
         observations_remaining: Arc<AtomicUsize>,
         agent_count: usize,
         phantom: std::marker::PhantomData<A>,
     },
-    Value(u64),
+    Value(Vec<u64>),
 }
 
 impl<A> ActionReceiver<A> {
     /// Blocks on the receiver until an action is received.
-    pub fn rcv_raw(self) -> Option<u64> {
+    pub fn rcv_raw(self) -> Option<Vec<u64>> {
         match self.inner {
             InnerActionReceiver::Receiver {
                 receiver,
@@ -122,15 +122,16 @@ impl<A> ActionReceiver<A> {
     }
 
     /// Blocks on the receiver until an action is received.
-    pub fn rcv<'a>(self) -> Option<A>
+    pub fn rcv<'a>(self) -> Option<Vec<A>>
     where
         A: Action<'a>,
     {
-        self.rcv_raw().map(A::from_u64)
+        self.rcv_raw()
+            .map(|x| x.into_iter().map(A::from_u64).collect())
     }
 
-    /// Blocks on the receiver until an action is received.
-    pub(crate) fn value(val: u64) -> ActionReceiver<A> {
+    /// Creates a new [`ActionReceiver`] which will return the given value.
+    pub(crate) fn value(val: Vec<u64>) -> ActionReceiver<A> {
         ActionReceiver {
             inner: InnerActionReceiver::Value(val),
         }

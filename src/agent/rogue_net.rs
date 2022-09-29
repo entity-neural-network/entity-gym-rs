@@ -1,8 +1,9 @@
 use std::fs::File;
 
 use ndarray::Array2;
-use rogue_net::RogueNet;
+use rogue_net::{FwdArgs, RogueNet};
 
+use super::obs::EntityFeatures;
 use super::{ActionReceiver, Agent};
 use super::{Featurizable, Obs};
 
@@ -55,19 +56,41 @@ impl RogueNetAgent {
 }
 
 impl Agent for RogueNetAgent {
-    fn act_dyn(&mut self, _action: &str, _num_actions: u64, obs: &Obs) -> Option<u64> {
-        let entities = obs
+    fn act_dyn(&mut self, _action: &str, _num_actions: u64, obs: &Obs) -> Option<Vec<u64>> {
+        let features = obs
             .entities
             .iter()
-            .map(|(name, (feats, count, dim))| {
-                (
-                    name.to_string(),
-                    Array2::from_shape_vec((*count, *dim), feats.clone()).unwrap(),
-                )
+            .map(
+                |(
+                    name,
+                    EntityFeatures {
+                        features,
+                        num_entities,
+                        num_features,
+                        ..
+                    },
+                )| {
+                    (
+                        name.to_string(),
+                        Array2::from_shape_vec((*num_entities, *num_features), features.clone())
+                            .unwrap(),
+                    )
+                },
+            )
+            .collect();
+        let actors = obs
+            .entities
+            .iter()
+            .filter_map(|(name, e)| {
+                if e.is_actor {
+                    Some(name.to_string())
+                } else {
+                    None
+                }
             })
             .collect();
-        let (_probs, acts) = self.net.forward(entities);
-        Some(acts[0])
+        let (_probs, acts) = self.net.forward(FwdArgs { features, actors });
+        Some(acts)
     }
 
     fn act_async_dyn(&mut self, action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {

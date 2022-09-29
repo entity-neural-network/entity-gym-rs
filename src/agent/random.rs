@@ -9,12 +9,18 @@ pub struct RandomAgent {
 }
 
 impl Agent for RandomAgent {
-    fn act_dyn(&mut self, _action: &str, num_actions: u64, _: &Obs) -> Option<u64> {
-        Some(self.rng.gen_range(0..num_actions))
+    fn act_dyn(&mut self, _action: &str, num_actions: u64, obs: &Obs) -> Option<Vec<u64>> {
+        let actions = (0..obs.num_actors())
+            .map(|_| self.rng.gen_range(0..num_actions))
+            .collect();
+        Some(actions)
     }
 
-    fn act_async_dyn(&mut self, _action: &str, num_actions: u64, _: &Obs) -> ActionReceiver<u64> {
-        ActionReceiver::value(self.rng.gen_range(0..num_actions))
+    fn act_async_dyn(&mut self, _action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
+        let actions = (0..obs.num_actors())
+            .map(|_| self.rng.gen_range(0..num_actions))
+            .collect();
+        ActionReceiver::value(actions)
     }
 
     fn game_over(&mut self, _: &Obs) {}

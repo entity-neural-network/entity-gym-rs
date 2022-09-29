@@ -31,12 +31,19 @@ use super::Featurizable;
 ///     .entities([Cake { is_a_lie: true }, Cake { is_a_lie: false }]);
 /// ```
 pub struct Obs {
-    pub(crate) entities: HashMap<&'static str, (Vec<f32>, usize, usize)>,
+    pub(crate) entities: HashMap<&'static str, EntityFeatures>,
     // Field is only accessed when cfg(feature = "python").
     #[allow(dead_code)]
     pub(crate) done: bool,
     pub(crate) score: f32,
     pub(crate) metrics: FxHashMap<String, f32>,
+}
+
+pub(crate) struct EntityFeatures {
+    pub features: Vec<f32>,
+    pub num_entities: usize,
+    pub num_features: usize,
+    pub is_actor: bool,
 }
 
 impl Obs {
@@ -57,15 +64,38 @@ impl Obs {
     ///
     /// # Arguments
     /// * `entities` - An iterator of [`Featurizable`] entities to add to the observation.
-    pub fn entities<E: Featurizable, I: IntoIterator<Item = E>>(mut self, entities: I) -> Self {
+    pub fn entities<E: Featurizable, I: IntoIterator<Item = E>>(self, entities: I) -> Self {
+        self._entities(entities, false)
+    }
+
+    /// Adds a set of actor entities to the observation.
+    ///
+    /// # Arguments
+    /// * `entities` - An iterator of [`Featurizable`] entities to add to the observation.
+    pub fn actors<E: Featurizable, I: IntoIterator<Item = E>>(self, entities: I) -> Self {
+        self._entities(entities, true)
+    }
+
+    fn _entities<E: Featurizable, I: IntoIterator<Item = E>>(
+        mut self,
+        entities: I,
+        is_actor: bool,
+    ) -> Self {
         let mut feats = vec![];
         let mut count = 0;
         for entity in entities.into_iter() {
             feats.extend(entity.featurize());
             count += 1;
         }
-        self.entities
-            .insert(E::name(), (feats, count, E::num_feats()));
+        self.entities.insert(
+            E::name(),
+            EntityFeatures {
+                features: feats,
+                num_entities: count,
+                num_features: E::num_feats(),
+                is_actor,
+            },
+        );
         self
     }
 
@@ -91,5 +121,16 @@ impl Obs {
     /// Returns the score.
     pub fn score(&self) -> f32 {
         self.score
+    }
+
+    /// The number of actors in the observation.
+    pub fn num_actors(&self) -> usize {
+        let mut actor_count = 0;
+        for entity in self.entities.values() {
+            if entity.is_actor {
+                actor_count += entity.num_entities;
+            }
+        }
+        actor_count
     }
 }
