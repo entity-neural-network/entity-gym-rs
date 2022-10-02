@@ -143,7 +143,6 @@ impl Environment for TrainAgentEnv {
             assert!(action.len() == 1);
             match &action[0] {
                 Some(Action::Categorical { actors: _, action }) => {
-                    assert!(action.len() == 1);
                     sender
                         .send(action.iter().map(|a| *a as u64).collect())
                         .unwrap();
@@ -231,15 +230,26 @@ impl TrainAgent {
                 }
             }
         }
+
+        let mut actors = vec![];
+        let mut n = 0;
+        for entity in &self.entity_names {
+            if let Some(entity) = obs.entities.get(entity.as_str()) {
+                if entity.is_actor {
+                    for i in 0..entity.num_entities as u64 {
+                        actors.push(n + i);
+                    }
+                }
+                n += entity.num_entities as u64;
+            }
+        }
+
         // TODO: make noise when obs contains entity that is not in obs space
         let last_score = self.score.replace(obs.score).unwrap_or(obs.score);
         let observation = Observation {
             features: CompactFeatures { counts, data },
             ids: vec![None],
-            actions: vec![Some(ActionMask::DenseCategorical {
-                actors: vec![0],
-                mask: None,
-            })],
+            actions: vec![Some(ActionMask::DenseCategorical { actors, mask: None })],
             done: obs.done,
             reward: obs.score - last_score,
             metrics: obs.metrics.clone(),
