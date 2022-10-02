@@ -16,7 +16,7 @@ pub struct PyVecEnv {
 #[pyclass]
 pub struct VecObs {
     #[pyo3(get)]
-    pub features: FxHashMap<String, RaggedBufferF32>,
+    pub features: Vec<(String, RaggedBufferF32)>,
     #[allow(clippy::type_complexity)]
     #[pyo3(get)]
     pub action_masks: Vec<(
@@ -130,7 +130,7 @@ impl PyVecEnv {
             .iter()
             .zip(raggeds)
             .map(|((name, _), ragged)| (name.clone(), RaggedBufferF32(ragged.view())))
-            .collect::<FxHashMap<_, _>>();
+            .collect::<Vec<_>>();
 
         let mut action_masks = FxHashMap::default();
         for (i, (action_name, action_space)) in self.env.action_space.iter().enumerate() {

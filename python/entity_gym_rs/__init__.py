@@ -53,7 +53,7 @@ def to_vec_obs(x) -> VecObs:
             )
 
     return VecObs(
-        features={k: clean_ragged_f32(v) for k, v in x.features.items()},
+        features={k: clean_ragged_f32(v) for k, v in x.features},
         visible={},
         action_masks=action_masks,
         reward=x.reward,
