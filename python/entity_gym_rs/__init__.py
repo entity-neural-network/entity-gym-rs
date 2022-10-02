@@ -68,9 +68,7 @@ class RustVecEnv(VecEnv):
 
     def obs_space(self) -> ObsSpace:
         return ObsSpace(
-            entities={
-                name: Entity(feats) for name, feats in self._env.obs_space().items()
-            },
+            entities={name: Entity(feats) for name, feats in self._env.obs_space()},
         )
 
     def action_space(self) -> Dict[ActionName, ActionSpace]:

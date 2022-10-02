@@ -75,7 +75,7 @@ impl PyVecEnv {
         self.merge_obs(py, &obs[..])
     }
 
-    fn obs_space(&self) -> PyResult<FxHashMap<String, Vec<String>>> {
+    fn obs_space(&self) -> PyResult<Vec<(String, Vec<String>)>> {
         Ok(self
             .env
             .obs_space
