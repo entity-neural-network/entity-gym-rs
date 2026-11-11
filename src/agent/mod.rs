@@ -62,7 +62,6 @@ impl<T: Agent> AgentOps for T {
             .map(|x| x.into_iter().map(A::from_u64).collect())
     }
 
-    #[must_use]
     fn act_async<'a, A: Action<'a>>(&mut self, obs: &Obs) -> ActionReceiver<A> {
         let receiver = self.act_async_dyn(A::name(), A::num_actions(), obs);
         unsafe { std::mem::transmute::<ActionReceiver<u64>, ActionReceiver<A>>(receiver) }
@@ -75,7 +74,6 @@ impl AgentOps for dyn Agent {
             .map(|x| x.into_iter().map(A::from_u64).collect())
     }
 
-    #[must_use]
     fn act_async<'a, A: Action<'a>>(&mut self, obs: &Obs) -> ActionReceiver<A> {
         let receiver = self.act_async_dyn(A::name(), A::num_actions(), obs);
         unsafe { std::mem::transmute::<ActionReceiver<u64>, ActionReceiver<A>>(receiver) }
