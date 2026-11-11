@@ -1,19 +1,50 @@
 use std::collections::hash_map::Entry;
 
-use numpy::{PyArray1, PyReadonlyArrayDyn, ToPyArray};
+use numpy::{PyArray1, PyArray2, PyArrayMethods, PyReadonlyArrayDyn};
 use pyo3::prelude::*;
-use ragged_buffer::monomorphs::{RaggedBufferBool, RaggedBufferF32, RaggedBufferI64};
 use ragged_buffer::ragged_buffer::RaggedBuffer;
 use rustc_hash::FxHashMap;
 
 use super::{ActionMask, ActionSpace, Observation, VecEnv};
 
-#[pyclass]
+#[pyclass(unsendable)]
 pub struct PyVecEnv {
     pub env: VecEnv,
 }
 
-#[pyclass]
+/// Defines a Python class wrapping a [`RaggedBuffer`] of the given element type.
+///
+/// It exposes the same `as_array()` and `size1()` methods as the classes of the
+/// `ragged_buffer` Python package, which is all the `entity_gym_rs` Python
+/// wrapper needs to convert it into a `ragged_buffer` object.
+macro_rules! ragged_class {
+    ($name:ident, $t:ty) => {
+        #[pyclass(frozen)]
+        #[derive(Clone)]
+        pub struct $name(pub RaggedBuffer<$t>);
+
+        #[pymethods]
+        impl $name {
+            /// All items as a 2D array of shape (items, features).
+            fn as_array<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray2<$t>>> {
+                Ok(PyArray1::from_slice(py, &self.0.data)
+                    .reshape([self.0.items, self.0.features])?)
+            }
+
+            /// The number of items in each subarray.
+            fn size1<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<i64>> {
+                let lengths: Vec<i64> = self.0.subarrays.iter().map(|r| r.len() as i64).collect();
+                PyArray1::from_vec(py, lengths)
+            }
+        }
+    };
+}
+
+ragged_class!(RaggedBufferF32, f32);
+ragged_class!(RaggedBufferI64, i64);
+ragged_class!(RaggedBufferBool, bool);
+
+#[pyclass(frozen)]
 pub struct VecObs {
     #[pyo3(get)]
     pub features: Vec<(String, RaggedBufferF32)>,
@@ -46,32 +77,29 @@ impl PyVecEnv {
     fn act(
         &mut self,
         py: Python,
-        action: Vec<(PyReadonlyArrayDyn<i64>, PyReadonlyArrayDyn<i64>)>,
+        action: Vec<(PyReadonlyArrayDyn<'_, i64>, PyReadonlyArrayDyn<'_, i64>)>,
     ) -> VecObs {
-        let obs = self.env.act(
-            action
-                .into_iter()
-                .map(|(data, lengths)| {
-                    let mut cumsum = 0usize;
-                    let mut subarrays = Vec::with_capacity(lengths.len());
-                    for len in lengths.iter().unwrap() {
-                        let subarray = cumsum..(cumsum + *len as usize);
-                        subarrays.push(subarray);
-                        cumsum += *len as usize;
-                    }
-                    Some(RaggedBuffer::<i64> {
-                        data: if data.is_empty() {
-                            vec![]
-                        } else {
-                            data.iter().unwrap().copied().collect()
-                        },
-                        subarrays,
-                        features: 1,
-                        items: cumsum,
-                    })
+        let actions = action
+            .into_iter()
+            .map(|(data, lengths)| {
+                let mut cumsum = 0usize;
+                let lengths = lengths.as_array();
+                let mut subarrays = Vec::with_capacity(lengths.len());
+                for len in lengths.iter() {
+                    let subarray = cumsum..(cumsum + *len as usize);
+                    subarrays.push(subarray);
+                    cumsum += *len as usize;
+                }
+                Some(RaggedBuffer::<i64> {
+                    data: data.as_array().iter().copied().collect(),
+                    subarrays,
+                    features: 1,
+                    items: cumsum,
                 })
-                .collect(),
-        );
+            })
+            .collect();
+        // Release the GIL while the environments step.
+        let obs = py.detach(|| self.env.act(actions));
         self.merge_obs(py, &obs[..])
     }
 
@@ -129,7 +157,7 @@ impl PyVecEnv {
             .entities
             .iter()
             .zip(raggeds)
-            .map(|((name, _), ragged)| (name.clone(), RaggedBufferF32(ragged.view())))
+            .map(|((name, _), ragged)| (name.clone(), RaggedBufferF32(ragged)))
             .collect::<Vec<_>>();
 
         let mut action_masks = FxHashMap::default();
@@ -187,9 +215,9 @@ impl PyVecEnv {
                     action_masks.insert(
                         action_name.to_string(),
                         (
-                            RaggedBufferI64(ragged_actors.view()),
+                            RaggedBufferI64(ragged_actors),
                             None,
-                            Some(RaggedBufferBool(ragged_mask.view())),
+                            Some(RaggedBufferBool(ragged_mask)),
                         ),
                     );
                 }
@@ -197,8 +225,8 @@ impl PyVecEnv {
                     action_masks.insert(
                         action_name.to_string(),
                         (
-                            RaggedBufferI64(ragged_actors.view()),
-                            Some(RaggedBufferI64(ragged_actees.view())),
+                            RaggedBufferI64(ragged_actors),
+                            Some(RaggedBufferI64(ragged_actees)),
                             None,
                         ),
                     );
@@ -206,18 +234,8 @@ impl PyVecEnv {
             }
         }
 
-        let reward = obs
-            .iter()
-            .map(|o| o.reward)
-            .collect::<Vec<f32>>()
-            .to_pyarray(py)
-            .into();
-        let done = obs
-            .iter()
-            .map(|o| o.done)
-            .collect::<Vec<bool>>()
-            .to_pyarray(py)
-            .into();
+        let reward = PyArray1::from_vec(py, obs.iter().map(|o| o.reward).collect()).unbind();
+        let done = PyArray1::from_vec(py, obs.iter().map(|o| o.done).collect()).unbind();
         let mut metrics = FxHashMap::<_, (usize, f32, f32, f32)>::default();
         for o in obs.iter() {
             for (k, &v) in o.metrics.iter() {

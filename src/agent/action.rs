@@ -20,6 +20,7 @@ pub trait Action<'a> {
     fn labels() -> Vec<String>;
 }
 
+#[allow(dead_code)]
 mod expand {
     use entity_gym_derive::Action;
 

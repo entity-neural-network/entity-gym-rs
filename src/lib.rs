@@ -6,6 +6,7 @@
 
 /// High level API for interacting with neural network agents.
 pub mod agent;
+#[cfg(feature = "python")]
 mod examples;
 /// Low-level and highly API that mirrors the entity-gym Python API. Not intended for direct use.
 pub mod low_level;
@@ -21,13 +22,16 @@ mod python {
     pub use super::low_level::*;
     use pyo3::prelude::*;
 
-    #[pyfunction(
-        board_size = "10",
-        first_env_index = "0",
-        num_snakes = "1",
-        max_snake_length = "10",
-        max_steps = "100"
-    )]
+    #[pyfunction]
+    #[pyo3(signature = (
+        num_envs,
+        threads,
+        board_size = 10,
+        first_env_index = 0,
+        num_snakes = 1,
+        max_snake_length = 10,
+        max_steps = 100
+    ))]
     fn multisnake(
         num_envs: usize,
         threads: usize,
@@ -50,9 +54,12 @@ mod python {
     }
 
     #[pymodule]
-    fn entity_gym_rs(_py: Python, m: &PyModule) -> PyResult<()> {
+    fn entity_gym_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<py_vec_env::VecObs>()?;
         m.add_class::<py_vec_env::PyVecEnv>()?;
+        m.add_class::<py_vec_env::RaggedBufferF32>()?;
+        m.add_class::<py_vec_env::RaggedBufferI64>()?;
+        m.add_class::<py_vec_env::RaggedBufferBool>()?;
         m.add_function(wrap_pyfunction!(multisnake, m)?)?;
         Ok(())
     }
