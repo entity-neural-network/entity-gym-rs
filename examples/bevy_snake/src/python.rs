@@ -6,7 +6,7 @@ use entity_gym_rs::low_level::py_vec_env::PyVecEnv;
 use pyo3::prelude::*;
 
 #[derive(Clone)]
-#[pyclass]
+#[pyclass(from_py_object)]
 pub struct Config;
 
 #[pymethods]
@@ -34,7 +34,7 @@ fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: 
 }
 
 #[pymodule]
-fn bevy_snake_enn(_py: Python, m: &PyModule) -> PyResult<()> {
+fn bevy_snake_enn(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create_env, m)?)?;
     m.add_class::<Config>()?;
     Ok(())

@@ -51,7 +51,7 @@ pub struct TrainAgent {
 ///
 /// # Example
 ///
-/// The following code uses Pyo# to export a Python module with a `create_env` function that can be used from Python to create a
+/// The following code uses PyO3 to export a Python module with a `create_env` function that can be used from Python to create a
 /// [enn-trainer](https://github.com/entity-neural-network/enn-trainer)-compatible training environment.
 /// See [examples/bevy_snake](https://github.com/entity-neural-network/entity-gym-rs/tree/main/examples/bevy_snake) for a full example
 /// of how to run training.
@@ -71,7 +71,7 @@ pub struct TrainAgent {
 /// enum Move { Up, Down, Left, Right }
 ///
 /// #[derive(Clone)]
-/// #[pyclass]
+/// #[pyclass(from_py_object)]
 /// pub struct Config;
 ///
 /// #[pymethods]
@@ -90,7 +90,7 @@ pub struct TrainAgent {
 /// #[pyfunction]
 /// fn create_env(config: Config, num_envs: usize, threads: usize, first_env_index: u64) -> PyVecEnv {
 ///     TrainEnvBuilder::default()
-///         // Declar all entity and action types that will be used
+///         // Declare all entity and action types that will be used
 ///         .entity::<Head>()
 ///         .entity::<Food>()
 ///         .action::<Move>()
@@ -104,7 +104,7 @@ pub struct TrainAgent {
 /// }
 ///
 /// #[pymodule]
-/// fn bevy_snake_ai(_py: Python, m: &PyModule) -> PyResult<()> {
+/// fn bevy_snake_ai(m: &Bound<'_, PyModule>) -> PyResult<()> {
 ///     m.add_function(wrap_pyfunction!(create_env, m)?)?;
 ///     m.add_class::<Config>()?;
 ///     Ok(())
