@@ -26,7 +26,6 @@ fn main() {
             data: (0..128).map(|j| j * i * 991 % 4).collect(),
             subarrays: (0..128).map(|i| i..i + 1).collect(),
             features: 1,
-            items: 128,
         })]);
         //black_box(obs);
     }

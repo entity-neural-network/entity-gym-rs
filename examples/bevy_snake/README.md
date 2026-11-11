@@ -153,7 +153,7 @@ This doesn't work when running without a fixed framerate, so we instead use a [`
 
 We use [PyO3](https://pyo3.rs) to export the game as a Python module.
 There is currently [an issue](https://github.com/PyO3/pyo3/issues/1708) that causes long compile times when using PyO3 as a dependency.
-For this reason, we gate all the Python specific code and the PyO3 dependecy behind a "python" feature flag.
+For this reason, we gate all the Python specific code and the PyO3 dependency behind a "python" feature flag.
 We also need to build the crate as a `cdylib`.
 
 ```toml
@@ -162,7 +162,7 @@ crate-type = ["cdylib", "rlib"]
 name = "bevy_snake_enn"
 
 [dependencies]
-pyo3 = { version = "0.15", features = ["extension-module"], optional = true }
+pyo3 = { version = "0.30", features = ["extension-module"], optional = true }
 
 [features]
 python = ["pyo3", "entity-gym-rs/python"]
@@ -173,7 +173,7 @@ It defines a `Config` struct that allows us to pass in game settings from Python
 
 ```rust
 #[derive(Clone)]
-#[pyclass]
+#[pyclass(from_py_object)]
 struct Config;
 
 #[pymethods]
@@ -186,7 +186,7 @@ impl Config {
 ```
 
 The [`create_env`](src/python.rs#L21) function uses the [`TrainEnvBuilder`][TrainEnvBuilder] to construct a [`PyVecEnv`][PyVecEnv] which runs multiple instances of the game in parallel and will be used directly by the Python training framework in [train.py](train.py).
-The `TrainEnvBuilder` requires us to declar the types of all the entities and actions that we want to use in the game using the `entity` and `action` methods.
+The `TrainEnvBuilder` requires us to declare the types of all the entities and actions that we want to use in the game using the `entity` and `action` methods.
 When we pass the [`run_headless`](src/lib.rs#L310) function to `build`, the `TrainEnvBuilder` will spawn one thread for each environment that calls `run_headless` with a clone of the `Config`, a `TrainAgent` that connects the game to the Python training framework, and a random seed.
 The `num_envs`, `threads`, and `first_env_index` parameters are simply forwarded from Python and allow the training framework to control the number of worker threads and game instances.
 
@@ -213,7 +213,7 @@ Finally, the `#[pymodule]` macro constructs the Python module and registers the 
 
 ```rust
 #[pymodule]
-fn bevy_snake_ai(_py: Python, m: &PyModule) -> PyResult<()> {
+fn bevy_snake_enn(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(create_env, m)?)?;
     m.add_class::<Config>()?;
     Ok(())
