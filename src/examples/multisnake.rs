@@ -2,6 +2,7 @@ use std::boxed::Box;
 use std::collections::VecDeque;
 
 use rand::prelude::*;
+use rand::RngExt;
 use rustc_hash::FxHashMap;
 
 use crate::low_level::{
@@ -114,8 +115,8 @@ impl MultiSnake {
 
     fn random_empty_tile(&mut self) -> (i32, i32) {
         for _ in 0..10000 {
-            let x = self.rng.gen_range(0..self.board_size as i32);
-            let y = self.rng.gen_range(0..self.board_size as i32);
+            let x = self.rng.random_range(0..self.board_size as i32);
+            let y = self.rng.random_range(0..self.board_size as i32);
             if self.snakes.iter().any(|s| s.segments.contains(&(x, y))) {
                 continue;
             }

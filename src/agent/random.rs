@@ -1,5 +1,5 @@
 use rand::prelude::SmallRng;
-use rand::{Rng, SeedableRng};
+use rand::{RngExt, SeedableRng};
 
 use super::{ActionReceiver, Agent, Obs};
 
@@ -11,14 +11,14 @@ pub struct RandomAgent {
 impl Agent for RandomAgent {
     fn act_dyn(&mut self, _action: &str, num_actions: u64, obs: &Obs) -> Option<Vec<u64>> {
         let actions = (0..obs.num_actors())
-            .map(|_| self.rng.gen_range(0..num_actions))
+            .map(|_| self.rng.random_range(0..num_actions))
             .collect();
         Some(actions)
     }
 
     fn act_async_dyn(&mut self, _action: &str, num_actions: u64, obs: &Obs) -> ActionReceiver<u64> {
         let actions = (0..obs.num_actors())
-            .map(|_| self.rng.gen_range(0..num_actions))
+            .map(|_| self.rng.random_range(0..num_actions))
             .collect();
         ActionReceiver::value(actions)
     }

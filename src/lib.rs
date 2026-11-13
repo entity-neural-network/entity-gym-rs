@@ -57,9 +57,9 @@ mod python {
     fn entity_gym_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add_class::<py_vec_env::VecObs>()?;
         m.add_class::<py_vec_env::PyVecEnv>()?;
-        m.add_class::<py_vec_env::RaggedBufferF32>()?;
-        m.add_class::<py_vec_env::RaggedBufferI64>()?;
-        m.add_class::<py_vec_env::RaggedBufferBool>()?;
+        m.add_class::<ragged_buffer::monomorphs::RaggedBufferF32>()?;
+        m.add_class::<ragged_buffer::monomorphs::RaggedBufferI64>()?;
+        m.add_class::<ragged_buffer::monomorphs::RaggedBufferBool>()?;
         m.add_function(wrap_pyfunction!(multisnake, m)?)?;
         Ok(())
     }

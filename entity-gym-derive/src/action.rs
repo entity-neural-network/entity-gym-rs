@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
-use proc_macro_error::abort_call_site;
 use quote::quote;
+use syn::spanned::Spanned;
 use syn::{parse_macro_input, Data, DeriveInput, Ident};
 
 pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -9,7 +9,10 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let name = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let (from_u64, to_u64, num_actions, labels) = generate(name, &input.data);
+    let (from_u64, to_u64, num_actions, labels) = match generate(name, &input.data) {
+        Ok(generated) => generated,
+        Err(err) => return err.to_compile_error().into(),
+    };
     let name_str = name.to_string();
 
     let expanded = quote! {
@@ -41,7 +44,9 @@ pub fn derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     proc_macro::TokenStream::from(expanded)
 }
 
-fn generate(ident: &Ident, data: &Data) -> (TokenStream, TokenStream, TokenStream, TokenStream) {
+type Generated = (TokenStream, TokenStream, TokenStream, TokenStream);
+
+fn generate(ident: &Ident, data: &Data) -> syn::Result<Generated> {
     match data {
         Data::Enum(em) => {
             let len = em.variants.len() as u64;
@@ -62,7 +67,7 @@ fn generate(ident: &Ident, data: &Data) -> (TokenStream, TokenStream, TokenStrea
                     #variant_name.to_string()
                 });
             }
-            (
+            Ok((
                 quote! {
                     match index {
                         #(#from_u64),*
@@ -76,7 +81,7 @@ fn generate(ident: &Ident, data: &Data) -> (TokenStream, TokenStream, TokenStrea
                 },
                 quote! { #len },
                 quote! { vec![#(#labels),*] },
-            )
+            ))
         }
         Data::Struct(data) => match &data.fields {
             syn::Fields::Named(fields) => {
@@ -120,7 +125,7 @@ fn generate(ident: &Ident, data: &Data) -> (TokenStream, TokenStream, TokenStrea
                     };
                 }
 
-                (
+                Ok((
                     quote! {
                         let mut index = index;
                         #(#sub_indices)*
@@ -142,11 +147,20 @@ fn generate(ident: &Ident, data: &Data) -> (TokenStream, TokenStream, TokenStrea
                         #labels;
                         _result
                     },
-                )
+                ))
             }
-            syn::Fields::Unnamed(_fields) => todo!(),
-            syn::Fields::Unit => todo!(),
+            syn::Fields::Unnamed(fields) => Err(syn::Error::new(
+                fields.span(),
+                "\"Action\" cannot be derived for tuple structs",
+            )),
+            syn::Fields::Unit => Err(syn::Error::new(
+                ident.span(),
+                "\"Action\" cannot be derived for unit structs",
+            )),
         },
-        _ => abort_call_site!("\"Action\" can only be derived for enums and structs"),
+        Data::Union(data) => Err(syn::Error::new(
+            data.union_token.span(),
+            "\"Action\" can only be derived for enums and structs",
+        )),
     }
 }
