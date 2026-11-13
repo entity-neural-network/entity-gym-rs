@@ -1,3 +1,9 @@
+# Builds wheels for all supported platforms and publishes them to PyPI.
+# Based on the template from `maturin generate-ci github` (maturin 1.16).
+#
+# Runs when a version tag is pushed. It can also be started manually
+# (workflow_dispatch) to publish the version on the selected branch, e.g. when
+# the run for a tag failed.
 name: Publish PyPI wheel
 
 on:
@@ -6,54 +12,112 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  publish:
-    name: Publish for ${{ matrix.os }}
+  linux:
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - x86_64-unknown-linux-musl
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-msvc
-          - i686-pc-windows-msvc
-          - aarch64-pc-windows-msvc
-        include:
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-          - target: x86_64-apple-darwin
-            os: macos-latest
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-          - target: i686-pc-windows-msvc
-            os: windows-latest
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
+        target: [x86_64, aarch64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.9"
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --find-interpreter
+          manylinux: auto
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-linux-${{ matrix.target }}
+          path: dist
 
-    runs-on: ${{ matrix.os }}
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: |
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: x64
+          args: --release --out dist --find-interpreter
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-windows-x64
+          path: dist
+
+  macos:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - runner: macos-15-intel
+            target: x86_64
+          - runner: macos-latest
+            target: aarch64
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: |
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --find-interpreter
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-macos-${{ matrix.platform.target }}
+          path: dist
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-sdist
+          path: dist
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [linux, windows, macos, sdist]
     environment: PyPI
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - uses: actions/setup-python@v2
-        with:
-          python-version: 3.9
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Publish
-        uses: messense/maturin-action@v1
+      - uses: actions/download-artifact@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Publish to PyPI
+        # --check-url skips files that are already on PyPI, so reruns are safe.
+        run: uv publish --check-url https://pypi.org/simple/ 'wheels-*/*'
         env:
-          MATURIN_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        with:
-          maturin-version: latest
-          command: publish
-          args: --username=__token__ --skip-existing --features=python --find-interpreter
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}

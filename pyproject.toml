@@ -1,16 +1,20 @@
 [project]
 name = "entity-gym-rs"
-requires-python = ">=3.7"
+dynamic = ["version"]
+# Minimum supported by pyo3 0.30.
+requires-python = ">=3.9"
 dependencies = [
-    "numpy~=1.22.3",
+    "numpy>=1.21,<2",
     "ragged-buffer~=0.4.3",
     "entity-gym~=0.1.6",
 ]
 
 [build-system]
-requires = ["maturin>=0.13,<0.14"]
+requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [tool.maturin]
-features  = ["python"]
+features = ["python"]
 profile = "release"
+python-source = "python"
+module-name = "entity_gym_rs.entity_gym_rs"
